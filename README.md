@@ -1,2 +1,3 @@
 # collider
-Companion Computer steering drone based on image. Use ROS2 and ardupilot
+Companion Computer steering drone based on image. 
+It is a ROS2 Node that communicates with ardupilot.
