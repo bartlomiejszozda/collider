@@ -6,13 +6,17 @@ from rclpy.node import Node
 from ardupilot_msgs.srv import ModeSwitch
 from ardupilot_msgs.srv import ArmMotors
 from std_srvs.srv import Trigger
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy, LivelinessPolicy
 # from sensor_msgs.msg import Imu
 from mavros_msgs.srv import CommandTOL
 from pymavlink import mavutil
 import time
 import threading
+from pyquaternion import Quaternion
+from sensor_msgs.msg import Image
+import cv2
+import numpy as np
 
 class Collider(Node):
     def __init__(self):
@@ -29,11 +33,10 @@ class Collider(Node):
             # liveliness=LivelinessPolicy.AUTOMATIC,
             # liveliness_lease_duration=rclpy.duration.Duration(seconds=0, nanoseconds=0)  # Infinite
         )
-        # self.twist_subscriber = self.create_subscription(TwistStamped, "/ap/twist/filtered", self.twist_callback, qos_profile)
-
+        #self.twist_subscriber = self.create_subscription(TwistStamped, "/ap/twist/filtered", self.twist_callback, qos_profile)
+        #self.pose_topic = self.create_subscription(PoseStamped, '/ap/pose/filtered', self.pose_callback, qos_profile)
+        self.pose_topic = self.create_subscription(Image, 'camera/image', self.image_callback, qos_profile)
         self.connect_mavlink()
-        self.get_logger().info("starting a drone")
-        self.start()
 
     def start_rc_overriding_thread(self):
         self._rc_channels = [1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500]
@@ -61,6 +64,7 @@ class Collider(Node):
         #time.sleep(10)
 
         #START
+        self.get_logger().info("starting a drone")
         self.start_rc_overriding_thread()
         self._rc_channels = [1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500]
         self._call_mode(guided)
@@ -71,9 +75,10 @@ class Collider(Node):
         self._call_mode(stabilize)
         self._rc_channels = [1500, 1500, 2000, 1500, 1500, 1500, 1500, 1500]
         time.sleep(14)
-        self._rc_channels = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+        self._rc_channels = [1500, 1500, 1500, 1550, 1500, 1500, 1500, 1500]
         #self._call_takeoff_5()
 
+    def acro(self):
         #UPSIDE DOWN
         self._call_mode(acro)
         self._rc_channels = [2000, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
@@ -89,6 +94,7 @@ class Collider(Node):
         self._rc_channels = [1500, 1500, 2000, 1500, 1500, 1500, 1500, 1500]
         time.sleep(2)
 
+    def rtl_land():
         #BACK TO HOME
         self._call_mode(rtl)
         self._rc_channels = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
@@ -151,6 +157,7 @@ class Collider(Node):
         future.result()
 
     def _send_rcs_infinitely(self):
+        #you need to send RC channels all the time otherwise ardupilot will switch back to STABILIZE mode all the time
         prev_rc = None
         while True:
             if self._rc_channels != prev_rc:
@@ -209,9 +216,24 @@ class Collider(Node):
 
 
 
+    """
     def twist_callback(self, msg: TwistStamped):
         self.get_logger().info(f'message is: {msg.twist.angular.x}, {msg.twist.angular.y}, {msg.twist.angular.z}')
         # self.get_logger().info(f'message time is: {msg.header.stamp.sec}, {msg.header.stamp.nanosec}')
+    """
+    """
+    def pose_callback(self, msg: PoseStamped):
+        #self.get_logger().info(f'message is: {msg.pose.orientation.x}, {msg.pose.orientation.y}, {msg.pose.orientation.z}, {msg.pose.orientation.w}')
+        o = msg.pose.orientation
+        q = Quaternion(o.w, o.x, o.y, o.z)
+        my_vector = [1, 0, 0]
+        rotated_vector = q.rotate(my_vector)
+        print(rotated_vector)
+    """
+    def image_callback(self, msg: Image):
+        image = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
+        cv2.imshow("Camera Image", image)
+        cv2.waitKey(1)  # Required for OpenCV to update the window
 
     def timer_callback(self):
         self.get_logger().info(f"Hello {self.counter_} from collider")
@@ -220,6 +242,7 @@ class Collider(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = Collider()
+    node.start()
     rclpy.spin(node) #enables callbacks
     rclpy.shutdown()
 
