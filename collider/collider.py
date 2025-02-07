@@ -75,7 +75,7 @@ class Collider(Node):
         self._call_mode(stabilize)
         self._rc_channels = [1500, 1500, 2000, 1500, 1500, 1500, 1500, 1500]
         time.sleep(14)
-        self._rc_channels = [1500, 1500, 1500, 1550, 1500, 1500, 1500, 1500]
+        self._rc_channels = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
         #self._call_takeoff_5()
 
     def acro(self):
