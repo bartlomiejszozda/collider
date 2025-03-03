@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import Image
+from std_msgs.msg import Float32MultiArray
 import cv2
 import numpy as np
 
@@ -10,14 +11,14 @@ import numpy as np
 class Tracker(Node):
     def __init__(self):
         super().__init__("tracker")
-        self.create_timer(1.0, self.timer_callback)
         self.counter_ = 0
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,  # NOTE: UNKNOWN is not a valid QoS setting in ROS 2, using KEEP_LAST instead
             depth=10,  # Default depth, can be set to an appropriate value
         )
-        self.pose_topic = self.create_subscription(Image, 'camera/image', self.image_callback, qos_profile)
+        self.publisher = self.create_publisher(Float32MultiArray, '/collider/image_pos', 10)
+        self.camera_topic = self.create_subscription(Image, 'static_camera_sensor/image', self.image_callback, qos_profile)
         # "KCF": cv2.TrackerKCF_create,
         # "MOSSE": cv2.legacy.TrackerMOSSE_create,
         self.tracker_pair = ("CSRT", cv2.TrackerCSRT_create)
@@ -35,16 +36,28 @@ class Tracker(Node):
         if success:
             x, y, w, h = [int(v) for v in bbox]
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2, 1)
+            H, W = 960, 1280
+            target_from_center = x + w/2 - W/2, y + h/2 - H/2
+            focal = 410.939
+            degrees = lambda pixels: np.degrees(np.arctan(pixels/focal))
+            x_angle = degrees(target_from_center[0])
+            y_angle = degrees(target_from_center[1])
+            
+            self.send_target_angles(x_angle, y_angle)
+            print(f"angles: {x_angle} {y_angle}")
             cv2.putText(frame, self.tracker_pair[0], (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
         else:
             cv2.putText(frame, "Tracking Failure", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            self.send_target_angles(0, 0)
 
         cv2.imshow("Tracking", frame)
         cv2.waitKey(1)
 
-    def timer_callback(self):
-        self.get_logger().info(f"Hello {self.counter_} from collider")
-        self.counter_ += 1
+    def send_target_angles(self, x_angle, y_angle):
+        msg = Float32MultiArray()
+        msg.data = [x_angle, y_angle]
+        self.publisher.publish(msg)
+        self.get_logger().info(f"Publishing: {msg.data}")
 
 def main(args=None):
     rclpy.init(args=args)
