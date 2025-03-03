@@ -5,13 +5,15 @@ import threading
 from copy import deepcopy
 import signal
 import sys 
+from dataclasses import dataclass
 
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
 from ardupilot_msgs.srv import ModeSwitch
 from ardupilot_msgs.srv import ArmMotors
 from std_srvs.srv import Trigger
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from sensor_msgs.msg import Image
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy, LivelinessPolicy
@@ -40,10 +42,7 @@ class RcOverride:
                 }
         self._connection = mavlink_connection
         self._start_rc_overriding_thread()
-
-    def set_all(self, rc_channels):
-        assert(len(rc_channels) == 8)
-        self._rc_channels = rc_channels
+        self.lock = threading.Lock()
 
     def set_drone_rc_neutral(self):
         neutral = 1500
@@ -53,11 +52,12 @@ class RcOverride:
         self.set_rc("yaw", neutral)
 
     def set_rc(self, name, val):
-        try:
-            channel = self._mapping[name]
-            self._rc_channels[channel] = val
-        except KeyError as e:
-            print(f"Error while setting rc value: {e}")
+        with self.lock:
+            try:
+                channel = self._mapping[name]
+                self._rc_channels[channel] = val
+            except KeyError as e:
+                print(f"Error while setting rc value: {e}")
 
     def _start_rc_overriding_thread(self):
         self._rc_thread = threading.Thread(target=self._send_rcs_infinitely)
@@ -138,6 +138,7 @@ class StartStop(Node):
 
     def stop(self):
         self.get_logger().info("landing ...")
+        print("landing")
         self.land()
         rclpy.shutdown()
 
@@ -229,6 +230,23 @@ class StartStop(Node):
                 break
             time.sleep(0.1)
     """
+@dataclass
+class PixelDegrees:
+    x_degree: float
+    y_degree: float
+
+@dataclass
+class EulerDegrees:
+    roll: float
+    pitch: float
+    yaw: float
+
+Milliseconds = int
+
+@dataclass
+class AttitudeStamped:
+    stamp: Milliseconds
+    attitude: EulerDegrees
 
 
 class PoseHistory(Node):
@@ -244,31 +262,66 @@ class PoseHistory(Node):
             # liveliness=LivelinessPolicy.AUTOMATIC,
             # liveliness_lease_duration=rclpy.duration.Duration(seconds=0, nanoseconds=0)  # Infinite
         )
+        self._pose_history = [AttitudeStamped(Milliseconds(0), EulerDegrees(0,0,0))]
+        self.lock = threading.Lock()
         self.create_subscription(PoseStamped, '/ap/pose/filtered', self.pose_callback, qos_profile)
 
     def pose_callback(self, msg: PoseStamped):
         o = msg.pose.orientation
+        stamp = int(time.time() * 1000)#TODO PoseStamped time is ~700sec before time.time()
+        #stamp = Milliseconds(msg.header.stamp.sec * 1000 + msg.header.stamp.nanosec/1000000)
         roll, pitch, yaw = tf_transformations.euler_from_quaternion([o.w, o.x, o.y, o.z])
         degree = 180.0 / 3.14159
         roll, pitch, yaw = roll*degree, pitch*degree, yaw*degree
-        #print(f"roll {roll} pitch {pitch} yaw {yaw}")
-        if self.level:
-            pitch_rc = 1500 + int(5*pitch)
-            print(f"pitch_rc set to {pitch_rc}")
-            self.rc.set_rc("pitch", pitch_rc)
-            yaw_rc = 1500 + int(5*yaw)
-            print(f"yaw_rc set to {yaw_rc}")
-            self.rc.set_rc("yaw", yaw_rc)
+        with self.lock:
+            assert stamp > self._pose_history[-1].stamp, "assertion failed, {stamp} > {self._pose_history[-1].stamp}"
+            self._pose_history.append(AttitudeStamped(stamp, EulerDegrees(roll, pitch, yaw)))
+        
+    def get_closest(self, exact_stamp: Milliseconds):
+        with self.lock:
+            assert exact_stamp >= self._pose_history[0].stamp, f"assertion failed, {exact_stamp} <= {self._pose_history[0].stamp}"
+            assert exact_stamp <= self._pose_history[-1].stamp, f"assertion failed, {exact_stamp} <= {self._pose_history[-1].stamp}"
+            time_distance = lambda id_val: abs(id_val[1].stamp - exact_stamp)
+            id, closest = min(enumerate(self._pose_history), key=time_distance)
+            print(f"remove up to {id} id")
+            self._pose_history = self._pose_history[:id]
+        print(f"given pose for {closest.stamp} when requested for {exact_stamp}")
+        return closest.attitude
 
-    def get_pose(self, time):
-        pass
+    def get_current(self):
+        return self._pose_history[-1].attitude
+    """
+    def get_closest(self, exact_stamp: Milliseconds):
+        assert(exact_stamp > self._pose_history[0].stamp)
+        assert(exact_stamp < self._pose_history[-1].stamp)
+        start_id = len(self._pose_history)/2
+        start_candidate = self._pose_history[start_id]
+        search_right_part = exact_stamp > start_candidate.stamp
+        if search_right_part:
+            poses_to_search = self._pose_history[start_id+1:]
+        else:
+            poses_to_search = reversed(self._pose_history[:start_id])
+        best_candidate = self._get_closest_pose(poses_to_search, exact_stamp, start_candidate)
+        return best_candidate.attitude
+        
+
+    def _get_closest_pose(candidates, exact_stamp, best_candidate):
+        best_delta = best_candidate.stamp - exact_stamp
+        for candidate in candidates:
+            delta = candidate.stamp - exact_stamp
+            if abs(delta) > abs(best_delta):
+                return best_candidate
+            best_delta = delta
+            best_candidate = candidate
+    """
 
 
 class SteeringUnit(Node):
-    def __init__(self, rc):
+    def __init__(self, rc, pose_history):
         super().__init__("SteeringUnit")
         self.last_pitch = 1500
         self.rc = rc
+        self._pose_history = pose_history
         self.prev_time = time.time()
         #self.prev_diff_y = 0.0
         qos_profile = QoSProfile(
@@ -281,28 +334,48 @@ class SteeringUnit(Node):
             # liveliness=LivelinessPolicy.AUTOMATIC,
             # liveliness_lease_duration=rclpy.duration.Duration(seconds=0, nanoseconds=0)  # Infinite
         )
-        self.create_subscription(Float32MultiArray, '/collider/image_pos', self.image_pos_callback, qos_profile)
+        self._attack_phase = False
+        self._attack_angle = 30
+        self._flying_angle = 10
+        self._attack_angle_confirmations = 0
+        self.create_subscription(Float64MultiArray, '/collider/image_pos', self.image_pos_callback, qos_profile)
 
-    def image_pos_callback(self, msg: Float32MultiArray):
-        self.steer((msg.data[0], msg.data[1]))
 
-    def steer(self, target_angles):
-        print(f"image pos: {image_pos}")
-        curr_time = time.time()
-        if curr_time - self.prev_time > 1:
-            self.prev_time = curr_time
-            x_angle = target_angles[0]
-            y_angle = target_angles[1]
-            self._steer_pitch(y_angle)
+    def image_pos_callback(self, msg: Float64MultiArray):
+        timestamp = Milliseconds(msg.data[0])
+        print(f"Image delay is {timestamp - int(time.time() * 1000)}")
+        target_on_image = PixelDegrees(msg.data[1], msg.data[2])
+        self.steer(timestamp, target_on_image)
 
-    def _steer_pitch(self, y_angle):
-        print(y_angle)
-        pitch = self.last_pitch - int(y_angle)
-        print(f"pitch: {pitch}")
+    def steer(self, timestamp: Milliseconds, target_on_image: PixelDegrees):
+        pose_when_image = self._pose_history.get_closest(timestamp)
+        image_angle_y = target_on_image.y_degree
+        current_pitch = self._pose_history.get_current().pitch
+
+        self._monitor_attack_phase(pose_when_image.pitch, image_angle_y)
+
+        desired_pitch = self._flying_angle
+        if self._attack_phase:
+            print("ATTACK phase activated")
+            desired_pitch = pose_when_image.pitch + image_angle_y
+        self._steer_pitch(current_pitch, desired_pitch)
+
+    def _monitor_attack_phase(self, pitch, image_angle_y):
+        if pitch + image_angle_y > self._attack_angle:
+            self._attack_angle_confirmations += 1
+            print(f"attack phase confirmed for {self._attack_angle_confirmations} time")
+        elif self._attack_angle_confirmations > 0:
+            self._attack_angle_confirmations -= 1
+        self._attack_phase = self._attack_angle_confirmations > 10
+
+    def _steer_pitch(self, current, desired):
+        delta = desired - current
+        pitch = self.last_pitch - int(delta)
         if pitch > 1700:
             pitch = 1700
         if pitch < 1300:
             pitch = 1300
+        print(f"set pitch rc to: {pitch}")
         self.rc.set_rc("pitch", pitch)
         self.last_pitch = pitch
     """
@@ -359,13 +432,18 @@ def main(args=None):
         rc = RcOverride(mavlink_connection)
         set_gimbal_position(rc, mavlink_connection)
         start_stop = StartStop(mavlink_connection, rc)
-        steering_unit = SteeringUnit(rc)
+        pose_history = PoseHistory()
+        steering_unit = SteeringUnit(rc, pose_history)
         signal.signal(signal.SIGINT, lambda signal, frame: start_stop.stop())
 
         start_thread = threading.Thread(target=start, args=(start_stop,))
         start_thread.start()
-        rclpy.spin(start_stop)
-        #TODO run MultiThreadedExecutor
+        executor = MultiThreadedExecutor()
+        executor.add_node(start_stop)
+        executor.add_node(pose_history)
+        executor.add_node(steering_unit)
+
+        executor.spin()
     finally:
         start_stop.stop()
         rclpy.shutdown()
