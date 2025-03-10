@@ -59,6 +59,14 @@ class RcOverride:
             except KeyError as e:
                 print(f"Error while setting rc value: {e}")
 
+    def get_rc(self, name):
+        with self.lock:
+            try:
+                channel = self._mapping[name]
+                return self._rc_channels[channel]
+            except KeyError as e:
+                print(f"Error while getting rc value: {e}")
+
     def _start_rc_overriding_thread(self):
         self._rc_thread = threading.Thread(target=self._send_rcs_infinitely)
         self._rc_thread.deamon = True
@@ -93,6 +101,7 @@ class StartStop(Node):
     def __init__(self, mavlink_connection, rc):
         super().__init__("StartStop")
         self.stop_service = self.create_service(Trigger, 'stop_node', self.stop_callback)
+        self._stopping = False
 
         self.connection = mavlink_connection
         self.rc = rc
@@ -114,7 +123,7 @@ class StartStop(Node):
         self._call_mode("stabilize")
         time.sleep(0.1)
         self.rc.set_rc("throttle", 2000)
-        time.sleep(14)
+        time.sleep(24)
         self.rc.set_drone_rc_neutral()
         time.sleep(0.1)
         self._call_mode("alt_hold")
@@ -137,20 +146,20 @@ class StartStop(Node):
         return response
 
     def stop(self):
-        self.get_logger().info("landing ...")
-        print("landing")
-        self.land()
-        rclpy.shutdown()
+        if not self._stopping:
+            self._stopping = True
+            self.get_logger().info("landing ...")
+            print("landing")
+            self.rtl(7)
+            self.land()
+            rclpy.shutdown()
 
     def land(self):
         #TODO fix only landing can steer when it starts
         self.rc.set_drone_rc_neutral()
-        self._call_mode("stabilize")
-        self.rc.set_rc("throttle", 1390)
-        time.sleep(7)
-
         self.rc.set_rc("throttle", 1000) # cannot enter land when throttle
         self._call_mode("land")
+        time.sleep(5)
 
     def _call_mode(self, mode):
         mode_map = {
@@ -170,10 +179,10 @@ class StartStop(Node):
         future = client.call_async(request)
         future.result()
 
-    def rtl(self):
+    def rtl(self, period=20):
         self._call_mode("rtl")
         self.rc.set_drone_rc_neutral()
-        time.sleep(20)
+        time.sleep(period)
 
     def acro_wait(self):
         self.rc.set_drone_rc_neutral()
@@ -270,7 +279,7 @@ class PoseHistory(Node):
         o = msg.pose.orientation
         stamp = int(time.time() * 1000)#TODO PoseStamped time is ~700sec before time.time()
         #stamp = Milliseconds(msg.header.stamp.sec * 1000 + msg.header.stamp.nanosec/1000000)
-        roll, pitch, yaw = tf_transformations.euler_from_quaternion([o.w, o.x, o.y, o.z])
+        yaw, pitch, roll= tf_transformations.euler_from_quaternion([o.w, o.x, o.y, o.z])
         degree = 180.0 / 3.14159
         roll, pitch, yaw = roll*degree, pitch*degree, yaw*degree
         with self.lock:
@@ -280,16 +289,20 @@ class PoseHistory(Node):
     def get_closest(self, exact_stamp: Milliseconds):
         with self.lock:
             assert exact_stamp >= self._pose_history[0].stamp, f"assertion failed, {exact_stamp} <= {self._pose_history[0].stamp}"
-            assert exact_stamp <= self._pose_history[-1].stamp, f"assertion failed, {exact_stamp} <= {self._pose_history[-1].stamp}"
+            #assert exact_stamp <= self._pose_history[-1].stamp, f"assertion failed, {exact_stamp} <= {self._pose_history[-1].stamp}"
+            if exact_stamp <= self._pose_history[-1].stamp: 
+                print("assertion failed, {exact_stamp} <= {self._pose_history[-1].stamp}")
             time_distance = lambda id_val: abs(id_val[1].stamp - exact_stamp)
             id, closest = min(enumerate(self._pose_history), key=time_distance)
             print(f"remove up to {id} id")
-            self._pose_history = self._pose_history[:id]
+            self._pose_history = self._pose_history[id:]
         print(f"given pose for {closest.stamp} when requested for {exact_stamp}")
         return closest.attitude
 
     def get_current(self):
-        return self._pose_history[-1].attitude
+        with self.lock:
+            last = self._pose_history[-1].attitude
+        return last
     """
     def get_closest(self, exact_stamp: Milliseconds):
         assert(exact_stamp > self._pose_history[0].stamp)
@@ -319,7 +332,11 @@ class PoseHistory(Node):
 class SteeringUnit(Node):
     def __init__(self, rc, pose_history):
         super().__init__("SteeringUnit")
-        self.last_pitch = 1500
+        self.last_pitch_rc = 1500
+        #self.last_throttle = 1500
+        self.last_roll = 1500
+        self.last_target_yaw = None
+        self.last_target_yaw_delta = 0
         self.rc = rc
         self._pose_history = pose_history
         self.prev_time = time.time()
@@ -335,67 +352,113 @@ class SteeringUnit(Node):
             # liveliness_lease_duration=rclpy.duration.Duration(seconds=0, nanoseconds=0)  # Infinite
         )
         self._attack_phase = False
-        self._attack_angle = 30
-        self._flying_angle = 10
+        self._attack_angle = -20
+        self._flying_angle = -5
         self._attack_angle_confirmations = 0
         self.create_subscription(Float64MultiArray, '/collider/image_pos', self.image_pos_callback, qos_profile)
 
 
     def image_pos_callback(self, msg: Float64MultiArray):
+        if msg.data[0] == 0:
+            self.rc.set_drone_rc_neutral()
+            self.rc.set_rc("pitch", 1510)
+            return
         timestamp = Milliseconds(msg.data[0])
-        print(f"Image delay is {timestamp - int(time.time() * 1000)}")
         target_on_image = PixelDegrees(msg.data[1], msg.data[2])
         self.steer(timestamp, target_on_image)
 
     def steer(self, timestamp: Milliseconds, target_on_image: PixelDegrees):
         pose_when_image = self._pose_history.get_closest(timestamp)
-        image_angle_y = target_on_image.y_degree
-        current_pitch = self._pose_history.get_current().pitch
+        current_pose = self._pose_history.get_current()
+        print(f"Pose when image: {pose_when_image}")
+        print(f"Current pose   : {current_pose}")
+        print(f"target on image: {target_on_image}")
+        # Down pitch is negative
+        target_pitch = pose_when_image.pitch - target_on_image.y_degree
+        # Right yaw is positive
+        target_yaw = pose_when_image.yaw + target_on_image.x_degree
+        print(f"target    pitch: {target_pitch} yaw: {target_yaw}")
+        
 
-        self._monitor_attack_phase(pose_when_image.pitch, image_angle_y)
-
-        desired_pitch = self._flying_angle
-        if self._attack_phase:
+        goal_pitch = self._flying_angle
+        if self._monitor_attack_phase(target_pitch):
             print("ATTACK phase activated")
-            desired_pitch = pose_when_image.pitch + image_angle_y
-        self._steer_pitch(current_pitch, desired_pitch)
+            goal_pitch = target_pitch
+            self._steer_throttle(goal_pitch, self._attack_angle)
+        self._steer_pitch(current_pose.pitch, goal_pitch)
 
-    def _monitor_attack_phase(self, pitch, image_angle_y):
-        if pitch + image_angle_y > self._attack_angle:
+        self._steer_yaw(current_pose.yaw, target_yaw)
+        self._steer_roll(target_yaw)
+
+    def _monitor_attack_phase(self, target_pitch):
+        if target_pitch < self._attack_angle:
             self._attack_angle_confirmations += 1
-            print(f"attack phase confirmed for {self._attack_angle_confirmations} time")
         elif self._attack_angle_confirmations > 0:
             self._attack_angle_confirmations -= 1
-        self._attack_phase = self._attack_angle_confirmations > 10
+        attack_phase = self._attack_angle_confirmations > 5
+        return attack_phase
 
     def _steer_pitch(self, current, desired):
-        delta = desired - current
-        pitch = self.last_pitch - int(delta)
-        if pitch > 1700:
-            pitch = 1700
-        if pitch < 1300:
-            pitch = 1300
-        print(f"set pitch rc to: {pitch}")
-        self.rc.set_rc("pitch", pitch)
-        self.last_pitch = pitch
-    """
-    def _steer_pitch(self, y_norm):
-        curr_diff_y = y_norm - 0.5
-        diff_y_change = curr_diff_y - self.prev_diff_y
-        self.prev_diff_y = curr_diff_y
+        #delta = desired - current
+        #pitch = self.last_pitch_rc + int(np.round(delta))
+        pitch_rc = 1500 + int(np.round(8*desired))
+        max_change = 30
+        current_rc = self.rc.get_rc("pitch")
+        if pitch_rc > current_rc + max_change:
+            pitch_rc = current_rc + max_change
+        if pitch_rc < current_rc - max_change:
+            pitch_rc = current_rc - max_change
+        #pitch_rc = 1500 + int(np.round(8*desired)) + int(np.round(10*delta))
+        if pitch_rc > 2000:
+            pitch_rc = 2000
+        if pitch_rc < 1000:
+            pitch_rc = 1000
+        self.rc.set_rc("pitch", pitch_rc)
+        #self.last_pitch_rc = pitch_rc
 
-        rate = 500
-        #pitch = self.last_pitch - int(diff*rate)
-        pitch = 1500 - int(curr_diff_y*rate)
-        print(f"pitch {pitch}")
-        if pitch > 1650:
-            pitch = 1650
-        if pitch < 1350:
-            pitch = 1350
-        self.rc.set_rc("pitch", pitch)
-        self.rc.set_rc("throttle", 1750)
-        self.last_pitch = pitch
-    """
+    def _steer_throttle(self, goal_pitch, desired_pitch):
+        delta = desired_pitch - goal_pitch
+        #throttle = self.last_throttle + int(np.round(delta))
+        optimal_attack_throttle = 1350
+        throttle = optimal_attack_throttle + int(np.round(-20*delta))
+        if throttle > 2000:
+            throttle = 2000
+        if throttle < 1000:
+            throttle = 1000
+        self.rc.set_rc("throttle", throttle)
+        #self.last_throttle = throttle
+
+    def _steer_yaw(self, current, desired):
+        print(f"desired yaw: {desired}")
+        delta = desired - current
+        yaw_rc_change = int(np.round(20*delta))
+        if abs(yaw_rc_change) > 100:
+            yaw_rc_change = np.sign(yaw_rc_change)*100
+        if abs(yaw_rc_change) < 21:
+            yaw_rc_change = np.sign(yaw_rc_change)*21
+        yaw_rc = 1500 + yaw_rc_change
+        self.rc.set_rc("yaw", yaw_rc)
+
+    def _steer_roll(self, target_yaw):
+        if self.last_target_yaw is None:
+            self.last_target_yaw = target_yaw
+        target_yaw_delta = target_yaw - self.last_target_yaw
+        print(f"target_yaw_delta: {target_yaw_delta}")
+        delta_delta = target_yaw_delta - self.last_target_yaw_delta
+
+        #self.target_yaw_deltas.append(target_yaw_delta)
+        #if len(self.target_yaw_deltas) < 2:
+            #return
+        #sum_deltas = sum(self.target_yaw_deltas)
+        #self.target_yaw_deltas.pop(0)
+        #roll = 1500 + int(np.round(80*sum_deltas))
+        roll_rc_change = int(np.round(50*target_yaw_delta)) + int(np.round(50*(delta_delta)))
+        if abs(roll_rc_change) > 150:
+            roll_rc_change = np.sign(roll_rc_change)*150
+        roll = 1500 + roll_rc_change
+        self.rc.set_rc("roll", roll)
+        self.last_target_yaw = target_yaw
+        self.last_target_yaw_delta = target_yaw_delta
 
 
 def connect_mavlink():
@@ -421,14 +484,31 @@ def set_gimbal_position(rc, connection):
     """
 
 
+def set_param(connection, param_name, param_val):
+    connection.mav.param_set_send(
+        connection.target_system, connection.target_component,
+        param_name.encode('utf-8'),
+        float(param_val),
+        mavutil.mavlink.MAV_PARAM_TYPE_REAL32
+    )
+
+    print(f"Set {param_name} to {param_val}")
+
 def start(start_stop):
     start_stop.start()
+
 
 def main(args=None):
     try:
         rclpy.init(args=args)
 
         mavlink_connection = connect_mavlink()
+        set_param(mavlink_connection, "ANGLE_MAX", 5000)
+        set_param(mavlink_connection, "PILOT_SPEED_DN", 3000)
+        set_param(mavlink_connection, "THR_DZ", 0)
+        set_param(mavlink_connection, "PILOT_ACCEL_Z", 500)
+        set_param(mavlink_connection, "ATC_ACCEL_P_MAX", 5000)
+        #set_param(mavlink_connection, "ATC_ACCEL_R_MAX", 10000)
         rc = RcOverride(mavlink_connection)
         set_gimbal_position(rc, mavlink_connection)
         start_stop = StartStop(mavlink_connection, rc)
@@ -446,7 +526,7 @@ def main(args=None):
         executor.spin()
     finally:
         start_stop.stop()
-        rclpy.shutdown()
+        executor.shutdown()
 
 if __name__ == '__main__':
     main()

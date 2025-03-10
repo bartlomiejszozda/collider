@@ -22,11 +22,29 @@ class Tracker(Node):
         self.camera_topic = self.create_subscription(Image, 'static_camera_sensor/image', self.image_callback, qos_profile)
         # "KCF": cv2.TrackerKCF_create,
         # "MOSSE": cv2.legacy.TrackerMOSSE_create,
-        self.tracker_pair = ("CSRT", cv2.TrackerCSRT_create)
+        self.tracker_pair = ("csrt", cv2.TrackerCSRT_create)
+
+        """
+        params = cv2.TrackerCSRT_Params()
+        params.use_hog = True               # Enable HOG features
+        params.use_color_names = True       # Enable color-based tracking
+        params.use_gray = False             # Use grayscale tracking
+        params.use_rgb = True               # Use RGB for tracking
+        params.filter_lr = 0.02             # Learning rate (lower = more stable)
+        params.gsl_sigma = 1.0              # Gaussian Sigma for motion estimation
+        params.use_channel_weights = True   # Improve robustness
+        params.use_segmentation = True      # Enable object segmentation
+        #params.wrap_kernel = False          # Kernel wrapping for better robustness
+        params.psr_threshold = 0.05         # Peak-to-Sidelobe Ratio threshold (lower = more sensitive)
+        self.tracker = cv2.TrackerCSRT_create(params)
+        """
         self.tracker = cv2.TrackerCSRT_create()
         self.started = 0
+        self._failure = 0
 
     def image_callback(self, msg: Image):
+        if self._failure > 3:
+            return
         timestamp = int(time.time() * 1000)# Image stamp is time from start of the simulation
         frame = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
         if not self.started:
@@ -37,6 +55,8 @@ class Tracker(Node):
         #timestamp = msg.header.stamp.sec*1000 + msg.header.stamp.nanosec/1000000
         success, bbox = self.tracker.update(frame)
         if success:
+            if self._failure > 0:
+                self._failure -= 1
             x, y, w, h = [int(v) for v in bbox]
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2, 1)
             H, W = 960, 1280
@@ -49,8 +69,9 @@ class Tracker(Node):
             self.send_target_angles(float(timestamp), x_angle, y_angle)
             cv2.putText(frame, self.tracker_pair[0], (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
         else:
+            self._failure += 1
             cv2.putText(frame, "Tracking Failure", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-            self.send_target_angles(float(timestamp), 0, 0)
+            self.send_target_angles(0.0, 0.0, 0.0)
 
         cv2.imshow("Tracking", frame)
         cv2.waitKey(1)
