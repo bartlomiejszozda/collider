@@ -144,7 +144,7 @@ class Stopper(Node):
         self.get_logger().info("Stop request received. Shutting down...")
         response.success = True
         response.message = "Node is shutting down."
-        self.stop(signal_received, frame)
+        self.stop()
         return response
 
     def stop(self):
@@ -293,6 +293,8 @@ class PoseHistory(Node):
 
     def pose_callback(self, msg: PoseStamped):
         o = msg.pose.orientation
+        pose_callback_time = msg.header.stamp.sec*1e3 + msg.header.stamp.nanosec/1e6
+        print(f"time difference {time.time()*1e3 - pose_callback_time}")
         stamp = int(time.time() * 1000)#TODO PoseStamped time is ~700sec before time.time()
         yaw, pitch, roll= tf_transformations.euler_from_quaternion([o.w, o.x, o.y, o.z])
         degree = 180.0 / 3.14159

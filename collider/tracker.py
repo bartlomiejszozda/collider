@@ -192,7 +192,9 @@ class Tracker(Node):
         sim_time_ms = Time.from_msg(msg.clock).nanoseconds / 1e6
         self._last_sim_time_ms = sim_time_ms
         self._last_time_ms = time.time() * 1e3
-        time.sleep(0.02)
+        print(f"simulation time is {self._last_sim_time_ms}")
+        print(f"system     time is {self._last_time_ms}")
+        print(f"difference is {self._last_sim_time_ms - self._last_time_ms}")
 
     def get_system_time(self, sim_time_ms):
         difference = sim_time_ms - self._last_sim_time_ms
