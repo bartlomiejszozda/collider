@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 import threading
-import signal
-import functools
 
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
 
 from pymavlink import mavutil
 
-from collider.ModeChanger import ModeChanger
-from collider.PoseHistory import PoseHistory
-from collider.RcOverride import RcOverride
-from collider.Starter import Starter
-from collider.SteeringUnit import SteeringUnit
-from collider.Stopper import Stopper, handle_sigint
-from collider.ArdupilotTime import ArdupilotTime
-from collider.Tracker import Tracker
+from collider.src.ardupilot.ModeChanger import ModeChanger
+from collider.src.ardupilot.PoseHistory import PoseHistory
+from collider.src.ardupilot.RcOverride import RcOverride
+from collider.src.steering.Starter import Starter
+from collider.src.steering.SteeringUnit import SteeringUnit
+from collider.src.steering.Stopper import Stopper
+from collider.src.ardupilot.ArdupilotTime import ArdupilotTime
+from collider.src.tracker.BlackSpotTracker import BlackSpotTracker
+from collider.src.tracker.TrackerManager import TrackerManager
 
 
 def connect_mavlink():
@@ -69,7 +68,7 @@ def main(args=None):
         ardupilot_time = ArdupilotTime()
         pose_history = PoseHistory(ardupilot_time)
         steering_unit = SteeringUnit(rc, pose_history)
-        tracker = Tracker()
+        tracker = TrackerManager(BlackSpotTracker())
 
         executor.add_node(mode_changer)
         executor.add_node(starter)
@@ -107,3 +106,16 @@ def main(args=None):
 if __name__ == '__main__':
     main()
 
+#TODO SZOZDA
+# clean up TrackerManager
+# clean up BlackSpotTracker
+# add parent class for Trackers?
+# split SteeringUnit to steer throttle, pitch, yaw, roll etc.
+# add _ before private methods
+# change logs to ros logs? Or add logging system
+# add c++ node?
+# add type hints
+# auto code clean up
+# add a proxy pattern to access ModeChanger and RCOverride (do we really need it?)
+# allow to kill app / RTL and restart properlyKJ
+# log useful for analysis should be saved in excel

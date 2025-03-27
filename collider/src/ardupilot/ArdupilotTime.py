@@ -1,16 +1,14 @@
 from rclpy.time import Time
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from rosgraph_msgs.msg import Clock as ClockClass
 from rclpy.node import Node
 
+from collider.src.Helpers import getDefaultProfile
+
 class ArdupilotTime(Node):
+    # Do own time synchronization, because I didn't manage to make ardupilot work on sim_time.
     def __init__(self):
         super().__init__("tracker")
-        qos_profile = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT,
-            history=HistoryPolicy.KEEP_LAST,  # NOTE: UNKNOWN is not a valid QoS setting in ROS 2, using KEEP_LAST instead
-            depth=10,  # Default depth, can be set to an appropriate value
-        )
+        qos_profile = getDefaultProfile()
         self._difference_ms = None
         self.create_subscription(ClockClass, '/ap/clock', self._ardupilot_clock_callback, qos_profile)
 

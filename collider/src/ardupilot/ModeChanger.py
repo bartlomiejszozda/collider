@@ -3,7 +3,6 @@ from rclpy.node import Node
 
 
 class ModeChanger(Node):
-    #TODO add a proxy pattern to access ModeChanger and RCOverride
     def __init__(self):
         super().__init__("ModeChanger")
 

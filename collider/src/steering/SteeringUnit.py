@@ -2,27 +2,23 @@ import time
 
 import numpy as np
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from std_msgs.msg import Float64MultiArray
 
-import collider.Stopper
-from collider.Types import Milliseconds, PixelDegrees
+import collider.src.steering.Stopper as StopperModule
+from collider.src.Helpers import Milliseconds, PixelDegrees, getDefaultProfile
 
 
 class SteeringUnit(Node):
     def __init__(self, rc, pose_history):
         super().__init__("SteeringUnit")
-        #self.last_pitch_rc = 1500
         self.last_throttles = []
         self._last_target_pitches = []
-        #self.last_roll = 1500
         self.last_target_yaw = None
         self.last_target_yaw_change = 0
         self._last_target_pitch = 0
         self.rc = rc
         self._pose_history = pose_history
         self.prev_time = time.time()
-        #self.prev_diff_y = 0.0
         self._attack_phase = False
         self._attack_angle = -15
         self._flying_angle = -5
@@ -32,23 +28,19 @@ class SteeringUnit(Node):
         self._last_callback_time = None
         self.last_throttle = 1500
 
-        qos_profile = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT,
-            history=HistoryPolicy.KEEP_LAST,
-            depth=10,
-        )
+        qos_profile = getDefaultProfile()
         self.subscription = self.create_subscription(Float64MultiArray, '/collider/image_pos', self.image_pos_callback, qos_profile)
 
     def image_pos_callback(self, msg: Float64MultiArray):
         if self._last_callback_time is not None and time.time() - self._last_callback_time > 2:
-            print("self._last_callback_time is not None and time.time() - self._last_callback_time > 2")
-            collider.Stopper.should_stop = True
+            print("2 seconds elapsed from last image pos callback, stopping")
+            StopperModule.should_stop = True
             self._last_callback_time = None
         if msg.data[0] == 0:
             print("msg.data[0] == 0")
-            collider.Stopper.should_stop = True
+            StopperModule.should_stop = True
             self._last_callback_time = None
-        if collider.Stopper.should_stop:
+        if StopperModule.should_stop:
             print("should_stop")
             return
         self._last_callback_time = time.time()

@@ -1,8 +1,7 @@
 from ardupilot_msgs.srv import ArmMotors
 from rclpy.node import Node
-from std_srvs.srv import Trigger
 
-from collider.Stopper import sleep_and_check, STOP
+from collider.src.steering.Stopper import sleep_and_check, STOP
 
 
 class Starter(Node):
@@ -29,7 +28,7 @@ class Starter(Node):
             self.rc.set_drone_rc_neutral()
             sleep_and_check(0.5)
             self.mode_changer.call_mode("alt_hold")
-            sleep_and_check(0.5)
+            sleep_and_check(2)
         except STOP:
             return
 

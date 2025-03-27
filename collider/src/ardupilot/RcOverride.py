@@ -48,7 +48,7 @@ class RcOverride:
         self._rc_thread.start()
 
     def _send_rcs_infinitely(self):
-        # You need to send RC channels all the time otherwise ardupilot will switch back to STABILIZE mode all the time
+        # Need to send RC channels all the time otherwise ardupilot will switch back to STABILIZE mode
         prev_rc = None
         while True:
             if self._rc_channels != prev_rc:
@@ -59,14 +59,14 @@ class RcOverride:
 
     def _send_rc_override(self, channels):
         self._connection.mav.rc_channels_override_send(
-            self._connection.target_system,  # target_system
-            self._connection.target_component,  # target_component
-            channels[0],  # chan1_raw
-            channels[1],  # chan2_raw
-            channels[2],  # chan3_raw
-            channels[3],  # chan4_raw
-            channels[4],  # chan5_raw
-            channels[5],  # chan6_raw
-            channels[6],  # chan7_raw
-            channels[7]   # chan8_raw
+            self._connection.target_system,
+            self._connection.target_component,
+            channels[0],
+            channels[1],
+            channels[2],
+            channels[3],
+            channels[4],
+            channels[5],
+            channels[6],
+            channels[7]
         )
