@@ -2,14 +2,11 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
-from rclpy.time import Time
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float64MultiArray
 import cv2
 import numpy as np
 import time
-from rclpy.clock import Clock
-from rosgraph_msgs.msg import Clock as ClockType
 
 #H, W = 960, 1280
 H, W = 480, 640
@@ -78,7 +75,7 @@ class BlackSpotFinder:
         return "Black Spot Finder"
 
 
-class TrackerBackend:
+class OpenCvTracker:
     def __init__(self):
         # "KCF": cv2.TrackerKCF_create,
         # "MOSSE": cv2.legacy.TrackerMOSSE_create,
@@ -121,7 +118,7 @@ class FPS:
     def update(self):
         if time.time() - self._begin_time > self._period:
             elapsed = time.time() - self._begin_time
-            print(f"{(self._count/elapsed):.2f} FPS for last {self._period} seconds")
+            #print(f"{(self._count/elapsed):.2f} FPS for last {self._period} seconds")
             self._begin_time = time.time()
             self._count = 0
             return
@@ -135,28 +132,17 @@ class Tracker(Node):
             history=HistoryPolicy.KEEP_LAST,  # NOTE: UNKNOWN is not a valid QoS setting in ROS 2, using KEEP_LAST instead
             depth=10,  # Default depth, can be set to an appropriate value
         )
-        self.publisher = self.create_publisher(Float64MultiArray, '/collider/image_pos', 10)
-        self.camera_topic = self.create_subscription(Image, 'static_camera_sensor/image', self.image_callback, qos_profile)
-        #use_sim_time = self.get_parameter_or("use_sim_time", False).value
-        #self.get_logger().info(f"use_sim_time: {use_sim_time}")
-        self.clock_topic = self.create_subscription(ClockType, '/clock', self.clock_callback, qos_profile)
-        self._last_time_ms = None
-        self._last_sim_time_ms = None
         self._failure = False
-        #self._tracker = TrackerBackend()
         self._tracker = BlackSpotFinder()
         self._fps = FPS()
+        self.publisher = self.create_publisher(Float64MultiArray, '/collider/image_pos', 10)
+        self.camera_topic = self.create_subscription(Image, 'static_camera_sensor/image', self.image_callback, qos_profile)
 
     def image_callback(self, msg: Image):
-        if self._last_time_ms is None or self._last_sim_time_ms is None:
-            print("WARNING omit image_callback because received before clock_callback")
-            return
         if self._failure:
             return
-        #self.get_logger().info(f"Current ROS time: {Clock().now()}")
-        #self.get_logger().info(f"image_timestamp ms: {msg.header.stamp.sec*1000 + msg.header.stamp.nanosec/1000000}")
-        
-        timestamp_ms = self.get_system_time(msg.header.stamp.sec*1e3 + msg.header.stamp.nanosec/1e6)
+        timestamp_ms = msg.header.stamp.sec * 1e3 + msg.header.stamp.nanosec / 1e6
+
         frame = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
         tracking_frame = frame
         #tracking_frame = frame[(H//2-120):(H//2+120), (W//2-160):(W//2+160)]
@@ -187,29 +173,3 @@ class Tracker(Node):
         msg.data = [timestamp, x_angle, y_angle]
         self.publisher.publish(msg)
         #self.get_logger().info(f"Publishing: {msg.data}")
-
-    def clock_callback(self, msg):
-        sim_time_ms = Time.from_msg(msg.clock).nanoseconds / 1e6
-        self._last_sim_time_ms = sim_time_ms
-        self._last_time_ms = time.time() * 1e3
-        print(f"simulation time is {self._last_sim_time_ms}")
-        print(f"system     time is {self._last_time_ms}")
-        print(f"difference is {self._last_sim_time_ms - self._last_time_ms}")
-
-    def get_system_time(self, sim_time_ms):
-        difference = sim_time_ms - self._last_sim_time_ms
-        return int(self._last_time_ms + difference)
-        
-
-def main(args=None):
-    #rclpy.init(args=['--ros-args', '--param', 'use_sim_time:=true'])
-    rclpy.init(args=args)
-    node = Tracker()
-    rclpy.spin(node) #enables callbacks
-    rclpy.shutdown()
-    cv2.destroyAllWindows()
-
-if __name__ == '__main__':
-    main()
-
-
