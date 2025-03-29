@@ -5,11 +5,13 @@ from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
 
 import collider.src.steering.Stopper as StopperModule
-from collider.src.Helpers import Milliseconds, PixelDegrees, getDefaultProfile
+from collider.src.Helpers import Milliseconds, PixelDegrees, getDefaultProfile, Degree, d_Degree, d_d_Degree
+from collider.src.ardupilot.RcOverride import RcOverride
+from collider.src.ardupilot.PoseHistory import PoseHistory
 
 
 class SteeringUnit(Node):
-    def __init__(self, rc, pose_history):
+    def __init__(self, rc: RcOverride, pose_history: PoseHistory):
         super().__init__("SteeringUnit")
         self.last_throttles = []
         self._last_target_pitches = []
@@ -29,10 +31,10 @@ class SteeringUnit(Node):
         self.last_throttle = 1500
 
         qos_profile = getDefaultProfile()
-        self.subscription = self.create_subscription(Float64MultiArray, '/collider/image_pos', self.image_pos_callback,
+        self.subscription = self.create_subscription(Float64MultiArray, '/collider/image_pos', self._image_pos_callback,
                                                      qos_profile)
 
-    def image_pos_callback(self, msg: Float64MultiArray):
+    def _image_pos_callback(self, msg: Float64MultiArray):
         if self._last_callback_time is not None and time.time() - self._last_callback_time > 2:
             print("2 seconds elapsed from last image pos callback, stopping")
             StopperModule.should_stop = True
@@ -47,13 +49,13 @@ class SteeringUnit(Node):
         self._last_callback_time = time.time()
         timestamp = Milliseconds(msg.data[0])
         target_on_image = PixelDegrees(msg.data[1], msg.data[2])
-        self.steer(timestamp, target_on_image)
+        self._steer(timestamp, target_on_image)
 
     # def _stop(self):
     # if self.subscribtion is not None:
     # self.destroy_subscription(self.subscription)
 
-    def steer(self, simulation_timestamp: Milliseconds, target_on_image: PixelDegrees):
+    def _steer(self, simulation_timestamp: Milliseconds, target_on_image: PixelDegrees):
         pose_when_image = self._pose_history.get_closest(simulation_timestamp)
         if pose_when_image is None:
             print("WARNING omit steering because cant determine pose.")
@@ -90,7 +92,7 @@ class SteeringUnit(Node):
         self.last_target_yaw_change = target_yaw_change
         self._last_target_pitch = target_pitch
 
-    def _monitor_attack_phase(self, target_pitch):
+    def _monitor_attack_phase(self, target_pitch: Degree):
         if target_pitch < self._attack_angle + 0.5:
             self._attack_angle_confirmations += 1
         elif self._attack_angle_confirmations > 0:
@@ -98,7 +100,7 @@ class SteeringUnit(Node):
         if self._attack_angle_confirmations > 3:
             self._attack_phase = True
 
-    def _steer_pitch(self, current, desired):
+    def _steer_pitch(self, current: Degree, desired: Degree):
         # delta = desired - current
         # pitch = self.last_pitch_rc + int(np.round(delta))
         pitch_rc = 1500 + int(np.round(8 * desired))
@@ -116,7 +118,7 @@ class SteeringUnit(Node):
         self.rc.set_rc("pitch", pitch_rc)
         # self.last_pitch_rc = pitch_rc
 
-    def _steer_throttle(self, target_pitch, desired_target_pitch):
+    def _steer_throttle(self, target_pitch: Degree, desired_target_pitch: Degree):
         pitch_delta = target_pitch - desired_target_pitch
         target_pitch_change = target_pitch - self._last_target_pitch
         # throttle = self.last_throttle + 1*pitch_delta + 5*target_pitch_change
@@ -129,7 +131,7 @@ class SteeringUnit(Node):
         self.rc.set_rc("throttle", int(throttle))
         # self.last_throttle = throttle
 
-    def _steer_throttle_ATTACK(self, target_pitch, desired_target_pitch):
+    def _steer_throttle_ATTACK(self, target_pitch: Degree, desired_target_pitch: Degree):
         backward = 5
         assert len(self.last_throttles) <= backward
         assert len(self._last_target_pitches) <= backward
@@ -156,7 +158,7 @@ class SteeringUnit(Node):
         self.last_throttles.append(int(throttle))
         self._last_target_pitches.append(target_pitch)
 
-    def _steer_yaw(self, yaw_delta, target_yaw_change):
+    def _steer_yaw(self, yaw_delta: d_Degree, target_yaw_change: d_Degree):
         # deadzone for yaw is 20, add 10 to make deadzone 10
         # smaller_deadzone = np.sign(yaw_delta)*10
         print(f"yaw_delta: {yaw_delta}, target_yaw_change: {target_yaw_change}")
@@ -168,7 +170,7 @@ class SteeringUnit(Node):
         yaw_rc = 1500 + int(yaw_rc_change)
         self.rc.set_rc("yaw", yaw_rc)
 
-    def _steer_roll(self, target_yaw_change, change_of_target_yaw_change):
+    def _steer_roll(self, target_yaw_change: d_Degree, change_of_target_yaw_change: d_d_Degree):
         # self.target_yaw_deltas.append(target_yaw_change))
         # if len(self.target_yaw_deltas) < 2:
         # return

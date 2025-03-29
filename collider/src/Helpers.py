@@ -7,21 +7,25 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 FOCAL = 410.939
 
+Degree = float
+d_Degree = float # delta of Degree
+d_d_Degree = float # delta of delta of Degree
 
 @dataclass
 class PixelDegrees:
-    x_degree: float
-    y_degree: float
+    x_degree: Degree
+    y_degree: Degree
 
 
 @dataclass
 class EulerDegrees:
-    roll: float
-    pitch: float
-    yaw: float
+    roll: Degree
+    pitch: Degree
+    yaw: Degree
 
 
 Milliseconds = float
+Seconds = float
 
 
 @dataclass

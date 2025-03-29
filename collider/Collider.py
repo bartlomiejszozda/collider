@@ -111,7 +111,6 @@ if __name__ == '__main__':
 # TODO BASICS
 # split SteeringUnit to steer throttle, pitch, yaw, roll etc.
 # clean up Collider.py file
-# add type hints
 # change logs to ros logs? Or add logging system
 # add c++ node?
 # Fill readme
@@ -121,6 +120,7 @@ if __name__ == '__main__':
 # TODO IN THE END
 # check if _ before private methods
 # auto code clean up
+# check type hints
 
 # TODO ADDITIONAL
 # add a proxy pattern to access ModeChanger and RCOverride (do we really need it?)
@@ -131,3 +131,6 @@ if __name__ == '__main__':
 # clean up TrackerManager
 # add parent class for Trackers?
 # clean up BlackSpotTracker
+# Milliseconds everywhere and as float
+# typehints everywhere
+# _ before private everywhere

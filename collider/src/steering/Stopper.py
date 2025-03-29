@@ -4,6 +4,10 @@ import numpy as np
 from rclpy.node import Node
 from std_srvs.srv import Trigger
 
+from collider.src.Helpers import Milliseconds
+from collider.src.ardupilot.RcOverride import RcOverride
+from collider.src.ardupilot.ModeChanger import ModeChanger
+
 should_stop = False
 
 
@@ -21,31 +25,23 @@ class Exit(Exception):
     pass
 
 
-def sleep_and_check(sleep_time):
+def sleep_and_check(sleep_time: Milliseconds):
     global should_stop
-    period = 0.1
+    period: Milliseconds = 100
     limit = int(np.round(sleep_time / period))
     for count in range(limit):
-        time.sleep(0.1)
+        time.sleep(period / 1000)
         if should_stop:
             raise STOP
 
 
 class Stopper(Node):
-    def __init__(self, rc, mode_changer):
+    def __init__(self, rc: RcOverride, mode_changer: ModeChanger):
         super().__init__("Stopper")
-        self.stop_service = self.create_service(Trigger, 'stop_node', self._stop_callback)
         self._stopping = False
 
         self.rc = rc
         self.mode_changer = mode_changer
-
-    def _stop_callback(self, request, response):
-        self.get_logger().info("Stop request received. Shutting down...")
-        response.success = True
-        response.message = "Node is shutting down."
-        self._stop()
-        return response
 
     def stop_monitor(self):
         global should_stop

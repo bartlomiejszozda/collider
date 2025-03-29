@@ -2,10 +2,12 @@ from ardupilot_msgs.srv import ArmMotors
 from rclpy.node import Node
 
 from collider.src.steering.Stopper import sleep_and_check, STOP
+from collider.src.ardupilot.RcOverride import RcOverride
+from collider.src.ardupilot.ModeChanger import ModeChanger
 
 
 class Starter(Node):
-    def __init__(self, rc, mode_changer):
+    def __init__(self, rc: RcOverride, mode_changer: ModeChanger):
         super().__init__("Starter")
         self.rc = rc
         self.mode_changer = mode_changer
@@ -16,18 +18,18 @@ class Starter(Node):
             self.get_logger().info("starting a drone")
             self.rc.set_rc("throttle", 1000)
             self.mode_changer.call_mode("guided")
-            sleep_and_check(1)
+            sleep_and_check(1000)
             self._call_arm_throttle()
 
             # ASCENDING
             self.mode_changer.call_mode("stabilize")
-            sleep_and_check(0.1)
+            sleep_and_check(100)
             self.rc.set_rc("throttle", 2000)
-            sleep_and_check(5)
+            sleep_and_check(5000)
             self.rc.set_drone_rc_neutral()
-            sleep_and_check(0.5)
+            sleep_and_check(500)
             self.mode_changer.call_mode("alt_hold")
-            sleep_and_check(2)
+            sleep_and_check(2000)
         except STOP:
             return
 
@@ -44,15 +46,15 @@ class Starter(Node):
         self.mode_changer.call_mode("acro")
         self.rc.set_drone_rc_neutral()
         self.rc.set_rc("roll", 2000)
-        sleep_and_check(0.8)
+        sleep_and_check(800)
         self.rc.set_drone_rc_neutral()
-        sleep_and_check(2)
+        sleep_and_check(2000)
 
         # BACK TO NORMAL
         self.rc.set_rc("roll", 2000)
-        sleep_and_check(0.8)
+        sleep_and_check(8000)
 
         self.mode_changer.call_mode("stabilize")
         self.rc.set_drone_rc_neutral()
         self.rc.set_rc("throttle", 2000)
-        sleep_and_check(2)
+        sleep_and_check(2000)

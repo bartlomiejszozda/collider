@@ -16,7 +16,7 @@ class ModeChanger(Node):
         "brake": 17,
     }
 
-    def call_mode(self, mode):
+    def call_mode(self, mode: str):
         mode_num = self.mode_map[mode]
         client = self.create_client(ModeSwitch, "/ap/mode_switch")
         while not client.wait_for_service(timeout_sec=1.0):

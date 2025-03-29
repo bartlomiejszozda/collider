@@ -26,7 +26,7 @@ class RcOverride:
         self.set_rc("throttle", neutral)
         self.set_rc("yaw", neutral)
 
-    def set_rc(self, name, val):
+    def set_rc(self, name: str, val: int):
         with self.lock:
             try:
                 channel = self._mapping[name]
@@ -34,7 +34,7 @@ class RcOverride:
             except KeyError as e:
                 print(f"Error while setting rc value: {e}")
 
-    def get_rc(self, name):
+    def get_rc(self, name: str):
         with self.lock:
             try:
                 channel = self._mapping[name]
@@ -57,7 +57,7 @@ class RcOverride:
             self._send_rc_override(self._rc_channels)
             time.sleep(0.1)
 
-    def _send_rc_override(self, channels):
+    def _send_rc_override(self, channels: list[int]):
         self._connection.mav.rc_channels_override_send(
             self._connection.target_system,
             self._connection.target_component,
