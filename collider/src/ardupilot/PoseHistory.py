@@ -23,12 +23,6 @@ class PoseHistory(Node):
             assert stamp > self._pose_history[-1].stamp, f"assertion failed, {stamp} > {self._pose_history[-1].stamp}"
             self._pose_history.append(AttitudeStamped(stamp, EulerDegrees(roll, pitch, yaw)))
 
-    def _get_attitude_in_degrees(self, o):
-        yaw, pitch, roll = tf_transformations.euler_from_quaternion([o.w, o.x, o.y, o.z])
-        degree = 180.0 / 3.14159
-        roll, pitch, yaw = roll * degree, pitch * degree, yaw * degree
-        return pitch, roll, yaw
-
     def get_closest(self, simulation_timestamp: Milliseconds):
         ardupilot_timestamp = self._ardupilot_time.ardupilot_time_from_sim_time(simulation_timestamp)
         margin_ms = 30
@@ -44,3 +38,9 @@ class PoseHistory(Node):
         with self.lock:
             last = self._pose_history[-1].attitude
         return last
+
+    def _get_attitude_in_degrees(self, o):
+        yaw, pitch, roll = tf_transformations.euler_from_quaternion([o.w, o.x, o.y, o.z])
+        degree = 180.0 / 3.14159
+        roll, pitch, yaw = roll * degree, pitch * degree, yaw * degree
+        return pitch, roll, yaw

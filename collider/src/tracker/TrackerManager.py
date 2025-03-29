@@ -18,8 +18,8 @@ class TrackerManager(Node):
 
     def _image_callback(self, msg: ImageMsg):
         frame, timestamp, frame_height, frame_width = self._unpack_msg(msg)
-        success, bbox = self._tracker.track(frame)
-        if success:
+        bbox = self._tracker.track(frame)
+        if bbox is not None:
             self._draw_bbox(frame, bbox)
             angles = self._calc_target_angles(bbox)
 
@@ -43,7 +43,7 @@ class TrackerManager(Node):
         cv2.putText(frame, self._tracker.name(), (bbox.x, bbox.y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
     def _calc_target_angles(self, bbox: DenormalizedBbox) -> PixelDegrees:
-        target_from_center = bbox.getPixelsFromCenter()
+        target_from_center = bbox.get_pixels_from_center()
         degrees = lambda pixels: np.degrees(np.arctan(pixels / FOCAL))
         return PixelDegrees(x_degree = degrees(target_from_center[0]), y_degree = degrees(target_from_center[1]))
 

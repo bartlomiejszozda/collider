@@ -5,5 +5,9 @@ import numpy as np
 
 class Tracker(ABC):
     @abstractmethod
-    def track(self, frame: np.ndarray) -> (bool, DenormalizedBbox):
+    def track(self, frame: np.ndarray) -> DenormalizedBbox:
+        pass
+
+    @abstractmethod
+    def name(self) -> str:
         pass

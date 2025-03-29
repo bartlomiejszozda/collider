@@ -17,7 +17,6 @@ class Starter(Node):
             self.rc.set_rc("throttle", 1000)
             self.mode_changer.call_mode("guided")
             sleep_and_check(1)
-
             self._call_arm_throttle()
 
             #ASCENDING

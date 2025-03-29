@@ -34,11 +34,18 @@ def sleep_and_check(sleep_time):
 class Stopper(Node):
     def __init__(self, rc, mode_changer):
         super().__init__("Stopper")
-        self.stop_service = self.create_service(Trigger, 'stop_node', self.stop_callback)
+        self.stop_service = self.create_service(Trigger, 'stop_node', self._stop_callback)
         self._stopping = False
 
         self.rc = rc
         self.mode_changer = mode_changer
+
+    def _stop_callback(self, request, response):
+        self.get_logger().info("Stop request received. Shutting down...")
+        response.success = True
+        response.message = "Node is shutting down."
+        self._stop()
+        return response
 
     def stop_monitor(self):
         global should_stop
@@ -48,12 +55,18 @@ class Stopper(Node):
                 return
             time.sleep(1)
 
-    def stop_callback(self, request, response):
-        self.get_logger().info("Stop request received. Shutting down...")
-        response.success = True
-        response.message = "Node is shutting down."
-        self._stop()
-        return response
+    def land(self):
+        self.rc.set_drone_rc_neutral()
+        self.rc.set_rc("throttle", 1000) # cannot enter land when throttle
+        self.mode_changer.call_mode("land")
+        time.sleep(5)
+
+    def rtl(self):
+        self.rc.set_drone_rc_neutral()
+        self.mode_changer.call_mode("rtl")
+
+    def brake(self):
+        self.mode_changer.call_mode("brake")
 
     def _stop(self):
         global should_stop
@@ -68,16 +81,3 @@ class Stopper(Node):
             self.mode_changer.call_mode("alt_hold")
             should_stop = False
             self._stopping = False
-
-    def land(self):
-        self.rc.set_drone_rc_neutral()
-        self.rc.set_rc("throttle", 1000) # cannot enter land when throttle
-        self.mode_changer.call_mode("land")
-        time.sleep(5)
-
-    def rtl(self):
-        self.rc.set_drone_rc_neutral()
-        self.mode_changer.call_mode("rtl")
-
-    def brake(self):
-        self.mode_changer.call_mode("brake")

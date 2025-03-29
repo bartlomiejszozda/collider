@@ -53,7 +53,6 @@ def main(args=None):
         set_param(mavlink_connection, "RC4_DZ", 0)
         set_param(mavlink_connection, "PILOT_ACCEL_Z", 500)
         set_param(mavlink_connection, "ATC_ACCEL_P_MAX", 5000)
-        #set_param(mavlink_connection, "ATC_ACCEL_R_MAX", 10000)
         rc = RcOverride(mavlink_connection)
         mode_changer = ModeChanger()
         #set_gimbal_position(rc, mavlink_connection)
@@ -106,18 +105,24 @@ def main(args=None):
 if __name__ == '__main__':
     main()
 
-#TODO SZOZDA
-# Done clean up TrackerManager
-# clean up BlackSpotTracker
-# Fill readme
-# Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )
-# add parent class for Trackers?
+# TODO BASICS
 # split SteeringUnit to steer throttle, pitch, yaw, roll etc.
-# add _ before private methods
+# clean up Collider.py file
+# add type hints
+# check if _ before private methods
+# auto code clean up
 # change logs to ros logs? Or add logging system
 # add c++ node?
-# add type hints
-# auto code clean up
+# Fill readme
+# Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )
+# add unit tests
+
+# TODO ADDITIONAL
 # add a proxy pattern to access ModeChanger and RCOverride (do we really need it?)
-# allow to kill app / RTL and restart properlyKJ
+# allow to kill app / RTL and restart properly
 # log useful for analysis should be saved in excel
+
+# TODO DONE
+# clean up TrackerManager
+# add parent class for Trackers?
+# clean up BlackSpotTracker

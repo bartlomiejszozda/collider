@@ -13,7 +13,7 @@ class OpenCvTracker(Tracker):
         self.tracker = self.tracker_pair[1]()
         self.started = False
 
-    def track(self, frame: np.ndarray) -> (bool, DenormalizedBbox):
+    def track(self, frame: np.ndarray) -> DenormalizedBbox:
         if not self.started:
             bbox = cv2.selectROI("Select Object", frame, fromCenter=False, showCrosshair=True)
             cv2.destroyWindow("Select Object")
@@ -21,7 +21,9 @@ class OpenCvTracker(Tracker):
             self.started = True
         success, bbox = self.tracker.update(frame)
         x, y, w, h = [int(v) for v in bbox]
-        return success, DenormalizedBbox(x=x, y=y, w=w, h=h, frame_w=frame.shape[1], frame_h=frame.shape[0])
+        if success:
+            return DenormalizedBbox(x=x, y=y, w=w, h=h, frame_w=frame.shape[1], frame_h=frame.shape[0])
+        return None
 
     def name(self):
         return self.tracker_pair[0]

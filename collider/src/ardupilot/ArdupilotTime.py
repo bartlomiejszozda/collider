@@ -5,7 +5,7 @@ from rclpy.node import Node
 from collider.src.Helpers import getDefaultProfile
 
 class ArdupilotTime(Node):
-    # Do own time synchronization, because I didn't manage to make ardupilot work on sim_time.
+    # Do own time synchronization, because didn't manage to make ardupilot work on sim_time.
     def __init__(self):
         super().__init__("tracker")
         qos_profile = getDefaultProfile()
