@@ -5,7 +5,7 @@ import rclpy
 from pymavlink import mavutil
 from rclpy.executors import MultiThreadedExecutor
 
-from collider.src.ardupilot.ArdupilotTime import ArdupilotTime
+from collider.src.ardupilot.ArdupilotClock import ArdupilotClock
 from collider.src.ardupilot.ModeChanger import ModeChanger
 from collider.src.ardupilot.PoseHistory import PoseHistory
 from collider.src.ardupilot.RcOverride import RcOverride
@@ -24,7 +24,7 @@ def connect_mavlink():
     return connection
 
 
-def set_gimbal_position(rc, connection):
+def set_gimbal_position(rc):
     rc.set_rc("gimbal_pitch", 1700)
     rc.set_rc("gimbal_yaw", 1500)
     rc.set_rc("gimbal_roll", 1500)
@@ -55,26 +55,25 @@ def main(args=None):
         set_param(mavlink_connection, "RC4_DZ", 0)
         set_param(mavlink_connection, "PILOT_ACCEL_Z", 500)
         set_param(mavlink_connection, "ATC_ACCEL_P_MAX", 5000)
-        rc = RcOverride(mavlink_connection)
-        mode_changer = ModeChanger()
-        # set_gimbal_position(rc, mavlink_connection)
 
         executor = MultiThreadedExecutor()
+
+        rc = RcOverride(mavlink_connection)
+        mode_changer = ModeChanger()
         stopper = Stopper(rc, mode_changer)
-        # signal.signal(signal.SIGINT, functools.partial(handle_sigint, executor=executor))
 
         starter = Starter(rc, mode_changer)
         starter.takeoff()
 
-        ardupilot_time = ArdupilotTime()
-        pose_history = PoseHistory(ardupilot_time)
+        ardupilot_clock = ArdupilotClock()
+        pose_history = PoseHistory(ardupilot_clock)
         steering_unit = SteeringUnit(rc, pose_history)
         tracker = TrackerManager(BlackSpotTracker())
 
         executor.add_node(mode_changer)
         executor.add_node(starter)
         executor.add_node(stopper)
-        executor.add_node(ardupilot_time)
+        executor.add_node(ardupilot_clock)
         executor.add_node(pose_history)
         executor.add_node(steering_unit)
         executor.add_node(tracker)
@@ -82,34 +81,24 @@ def main(args=None):
         executor_thread.start()
 
         stopper.stop_monitor()
-        """
-        try:
-            executor.spin()  # Keep the node running
-        except KeyboardInterrupt:
-            print("KeyboardInterrupt")
-            stopper._stop()
-        """
     finally:
-        print("finally")
-        print("shutdown")
+        print("Enters finally, shutdown")
         mode_changer.destroy_node()
         starter.destroy_node()
         stopper.destroy_node()
         pose_history.destroy_node()
         steering_unit.destroy_node()
         tracker.destroy_node()
-        print("before shutdown")
         rclpy.shutdown()
-        print("before join")
         executor_thread.join()
-        print("after join")
 
 
 if __name__ == '__main__':
     main()
 
 # TODO BASICS
-# clean up Collider.py file
+# do backflip at the start?
+# add continue_if_exception
 # change logs to ros logs? Or add logging system
 # Tracker using should_stop signal
 # add c++ node?
@@ -135,3 +124,4 @@ if __name__ == '__main__':
 # typehints everywhere
 # _ before private everywhere
 # Clean Up Steering unit
+# clean up Collider.py file

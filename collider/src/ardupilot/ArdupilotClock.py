@@ -5,7 +5,7 @@ from rosgraph_msgs.msg import Clock as ClockClass
 from collider.src.Helpers import getDefaultProfile, Milliseconds
 
 
-class ArdupilotTime(Node):
+class ArdupilotClock(Node):
     # Do own time synchronization, because didn't manage to make ardupilot work on sim_time.
     def __init__(self):
         super().__init__("tracker")

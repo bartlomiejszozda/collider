@@ -9,12 +9,12 @@ from collider.src.Helpers import AttitudeStamped, Milliseconds, EulerDegrees, ge
 
 
 class PoseHistory(Node):
-    def __init__(self, ardupilot_time):
+    def __init__(self, ardupilot_clock):
         super().__init__("PoseHistory")
         qos_profile = getDefaultProfile()
         self._pose_history = [AttitudeStamped(Milliseconds(0), EulerDegrees(0, 0, 0))]
         self.lock = threading.Lock()
-        self._ardupilot_time = ardupilot_time
+        self._ardupilot_clock = ardupilot_clock
         self.create_subscription(PoseStamped, '/ap/pose/filtered', self._pose_callback, qos_profile)
 
     def _pose_callback(self, msg: PoseStamped):
@@ -25,7 +25,7 @@ class PoseHistory(Node):
             self._pose_history.append(AttitudeStamped(stamp, euler_degrees))
 
     def get_closest(self, simulation_timestamp: Milliseconds) -> EulerDegrees:
-        ardupilot_timestamp = self._ardupilot_time.ardupilot_time_from_sim_time(simulation_timestamp)
+        ardupilot_timestamp = self._ardupilot_clock.ardupilot_time_from_sim_time(simulation_timestamp)
         margin = Milliseconds(30)
         with (self.lock):
             assert ardupilot_timestamp >= self._pose_history[
