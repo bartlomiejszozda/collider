@@ -1,8 +1,8 @@
+import cv2
+import numpy as np
 from rclpy.node import Node
 from sensor_msgs.msg import Image as ImageMsg
 from std_msgs.msg import Float64MultiArray
-import cv2
-import numpy as np
 
 from collider.src.Helpers import getDefaultProfile, FpsCalculator, DenormalizedBbox, FOCAL, Milliseconds, PixelDegrees
 
@@ -45,7 +45,7 @@ class TrackerManager(Node):
     def _calc_target_angles(self, bbox: DenormalizedBbox) -> PixelDegrees:
         target_from_center = bbox.get_pixels_from_center()
         degrees = lambda pixels: np.degrees(np.arctan(pixels / FOCAL))
-        return PixelDegrees(x_degree = degrees(target_from_center[0]), y_degree = degrees(target_from_center[1]))
+        return PixelDegrees(x_degree=degrees(target_from_center[0]), y_degree=degrees(target_from_center[1]))
 
     def _send_target_angles(self, timestamp: Milliseconds, angles: PixelDegrees):
         msg = Float64MultiArray()

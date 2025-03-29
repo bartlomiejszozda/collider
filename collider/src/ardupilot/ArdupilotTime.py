@@ -1,8 +1,9 @@
+from rclpy.node import Node
 from rclpy.time import Time
 from rosgraph_msgs.msg import Clock as ClockClass
-from rclpy.node import Node
 
 from collider.src.Helpers import getDefaultProfile
+
 
 class ArdupilotTime(Node):
     # Do own time synchronization, because didn't manage to make ardupilot work on sim_time.

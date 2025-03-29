@@ -4,6 +4,7 @@ import numpy as np
 from collider.src.Helpers import DenormalizedBbox
 from collider.src.tracker.Tracker import Tracker
 
+
 class BlackSpotTracker(Tracker):
     def __init__(self):
         self._started = False
@@ -28,13 +29,13 @@ class BlackSpotTracker(Tracker):
         x, y, h, w = cv2.selectROI("Select Object", frame, fromCenter=False, showCrosshair=True)
         frame_height, frame_width = frame.shape[0], frame.shape[1]
         self._prev_bbox = DenormalizedBbox(x=x, y=y, w=w, h=h, frame_w=frame_width,
-                         frame_h=frame_height)
+                                           frame_h=frame_height)
         cv2.destroyWindow("Select Object")
         self._started = True
 
     def _find_tracking_candidates(self, tracking_region: DenormalizedBbox, frame: np.ndarray) -> list[DenormalizedBbox]:
         tracking_frame = frame[tracking_region.y: tracking_region.y + tracking_region.h,
-                                tracking_region.x: tracking_region.x + tracking_region.w]
+                         tracking_region.x: tracking_region.x + tracking_region.w]
         frame_height, frame_width = frame.shape[0], frame.shape[1]
         tracking_frame_gray = cv2.cvtColor(tracking_frame, cv2.COLOR_BGR2GRAY)
         cv2.imshow("ROI", tracking_frame_gray)

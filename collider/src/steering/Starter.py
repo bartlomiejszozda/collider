@@ -12,14 +12,14 @@ class Starter(Node):
 
     def takeoff(self):
         try:
-            #START
+            # START
             self.get_logger().info("starting a drone")
             self.rc.set_rc("throttle", 1000)
             self.mode_changer.call_mode("guided")
             sleep_and_check(1)
             self._call_arm_throttle()
 
-            #ASCENDING
+            # ASCENDING
             self.mode_changer.call_mode("stabilize")
             sleep_and_check(0.1)
             self.rc.set_rc("throttle", 2000)
@@ -40,7 +40,7 @@ class Starter(Node):
         future.result()
 
     def acro_flip(self):
-        #UPSIDE DOWN
+        # UPSIDE DOWN
         self.mode_changer.call_mode("acro")
         self.rc.set_drone_rc_neutral()
         self.rc.set_rc("roll", 2000)
@@ -48,7 +48,7 @@ class Starter(Node):
         self.rc.set_drone_rc_neutral()
         sleep_and_check(2)
 
-        #BACK TO NORMAL
+        # BACK TO NORMAL
         self.rc.set_rc("roll", 2000)
         sleep_and_check(0.8)
 

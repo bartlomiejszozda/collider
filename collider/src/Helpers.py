@@ -1,16 +1,18 @@
 import copy
 import time
 from dataclasses import dataclass
-import numpy as np
 
+import numpy as np
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 FOCAL = 410.939
+
 
 @dataclass
 class PixelDegrees:
     x_degree: float
     y_degree: float
+
 
 @dataclass
 class EulerDegrees:
@@ -18,12 +20,15 @@ class EulerDegrees:
     pitch: float
     yaw: float
 
+
 Milliseconds = int
+
 
 @dataclass
 class AttitudeStamped:
     stamp: Milliseconds
     attitude: EulerDegrees
+
 
 def getDefaultProfile():
     return QoSProfile(
@@ -42,11 +47,12 @@ class FpsCalculator:
     def update(self):
         if time.time() - self._begin_time > self._period:
             elapsed = time.time() - self._begin_time
-            print(f"{(self._count/elapsed):.2f} FPS for last {self._period} seconds")
+            print(f"{(self._count / elapsed):.2f} FPS for last {self._period} seconds")
             self._begin_time = time.time()
             self._count = 0
             return
         self._count += 1
+
 
 @dataclass
 class DenormalizedBbox:
@@ -74,8 +80,8 @@ class DenormalizedBbox:
         enlarged_bbox = copy.copy(self)
         enlarged_bbox.x -= pixels
         enlarged_bbox.y -= pixels
-        enlarged_bbox.w += 2*pixels
-        enlarged_bbox.h += 2*pixels
+        enlarged_bbox.w += 2 * pixels
+        enlarged_bbox.h += 2 * pixels
         enlarged_bbox._limit_to_frame_size()
         return enlarged_bbox
 

@@ -57,7 +57,7 @@ class Stopper(Node):
 
     def land(self):
         self.rc.set_drone_rc_neutral()
-        self.rc.set_rc("throttle", 1000) # cannot enter land when throttle
+        self.rc.set_rc("throttle", 1000)# cannot enter land when throttle
         self.mode_changer.call_mode("land")
         time.sleep(5)
 

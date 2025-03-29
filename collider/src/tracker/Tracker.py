@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from collider.src.Helpers import DenormalizedBbox
 
 import numpy as np
+
+from collider.src.Helpers import DenormalizedBbox
+
 
 class Tracker(ABC):
     @abstractmethod

@@ -2,17 +2,16 @@
 import threading
 
 import rclpy
+from pymavlink import mavutil
 from rclpy.executors import MultiThreadedExecutor
 
-from pymavlink import mavutil
-
+from collider.src.ardupilot.ArdupilotTime import ArdupilotTime
 from collider.src.ardupilot.ModeChanger import ModeChanger
 from collider.src.ardupilot.PoseHistory import PoseHistory
 from collider.src.ardupilot.RcOverride import RcOverride
 from collider.src.steering.Starter import Starter
 from collider.src.steering.SteeringUnit import SteeringUnit
 from collider.src.steering.Stopper import Stopper
-from collider.src.ardupilot.ArdupilotTime import ArdupilotTime
 from collider.src.tracker.BlackSpotTracker import BlackSpotTracker
 from collider.src.tracker.TrackerManager import TrackerManager
 
@@ -24,10 +23,12 @@ def connect_mavlink():
     print("Heartbeat received")
     return connection
 
+
 def set_gimbal_position(rc, connection):
     rc.set_rc("gimbal_pitch", 1700)
     rc.set_rc("gimbal_yaw", 1500)
     rc.set_rc("gimbal_roll", 1500)
+
 
 def set_param(connection, param_name, param_val):
     connection.mav.param_set_send(
@@ -37,6 +38,7 @@ def set_param(connection, param_name, param_val):
         mavutil.mavlink.MAV_PARAM_TYPE_REAL32
     )
     print(f"Set {param_name} to {param_val}")
+
 
 def main(args=None):
     try:
@@ -55,11 +57,11 @@ def main(args=None):
         set_param(mavlink_connection, "ATC_ACCEL_P_MAX", 5000)
         rc = RcOverride(mavlink_connection)
         mode_changer = ModeChanger()
-        #set_gimbal_position(rc, mavlink_connection)
+        # set_gimbal_position(rc, mavlink_connection)
 
         executor = MultiThreadedExecutor()
         stopper = Stopper(rc, mode_changer)
-        #signal.signal(signal.SIGINT, functools.partial(handle_sigint, executor=executor))
+        # signal.signal(signal.SIGINT, functools.partial(handle_sigint, executor=executor))
 
         starter = Starter(rc, mode_changer)
         starter.takeoff()
@@ -101,6 +103,7 @@ def main(args=None):
         print("before join")
         executor_thread.join()
         print("after join")
+
 
 if __name__ == '__main__':
     main()

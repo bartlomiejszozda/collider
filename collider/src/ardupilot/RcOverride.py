@@ -7,14 +7,14 @@ class RcOverride:
     def __init__(self, mavlink_connection):
         self._rc_channels = [1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500]
         self._mapping = {
-                "roll":0,
-                "pitch":1,
-                "throttle":2,
-                "yaw":3,
-                "gimbal_roll":5,
-                "gimbal_pitch":6,
-                "gimbal_yaw":7,
-                }
+            "roll": 0,
+            "pitch": 1,
+            "throttle": 2,
+            "yaw": 3,
+            "gimbal_roll": 5,
+            "gimbal_pitch": 6,
+            "gimbal_yaw": 7,
+        }
         self._connection = mavlink_connection
         self._start_rc_overriding_thread()
         self.lock = threading.Lock()
