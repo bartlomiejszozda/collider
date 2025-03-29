@@ -109,9 +109,9 @@ if __name__ == '__main__':
     main()
 
 # TODO BASICS
-# split SteeringUnit to steer throttle, pitch, yaw, roll etc.
 # clean up Collider.py file
 # change logs to ros logs? Or add logging system
+# Tracker using should_stop signal
 # add c++ node?
 # Fill readme
 # Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )
@@ -134,3 +134,4 @@ if __name__ == '__main__':
 # Milliseconds everywhere and as float
 # typehints everywhere
 # _ before private everywhere
+# Clean Up Steering unit
