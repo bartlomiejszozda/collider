@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
+FOCAL = 410.939
+
 @dataclass
 class PixelDegrees:
     x_degree: float
@@ -43,3 +45,18 @@ class FpsCalculator:
             self._count = 0
             return
         self._count += 1
+
+@dataclass
+class DenormalizedBbox:
+    x: int
+    y: int
+    w: int
+    h: int
+    frame_w: int
+    frame_h: int
+
+    def getPixelsFromCenter(self):
+        x_from_center = self.x + self.w / 2 - self.frame_w / 2
+        y_from_center = self.y + self.h / 2 - self.frame_h / 2
+        return x_from_center, y_from_center
+

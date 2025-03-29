@@ -1,7 +1,11 @@
 import cv2
+import numpy as np
+
+from collider.src.Helpers import DenormalizedBbox
+from collider.src.tracker.Tracker import Tracker
 
 
-class OpenCvTracker:
+class OpenCvTracker(Tracker):
     def __init__(self):
         # "KCF": cv2.TrackerKCF_create,
         # "MOSSE": cv2.legacy.TrackerMOSSE_create,
@@ -9,13 +13,15 @@ class OpenCvTracker:
         self.tracker = self.tracker_pair[1]()
         self.started = False
 
-    def track(self, frame):
+    def track(self, frame: np.ndarray) -> (bool, DenormalizedBbox):
         if not self.started:
             bbox = cv2.selectROI("Select Object", frame, fromCenter=False, showCrosshair=True)
             cv2.destroyWindow("Select Object")
             self.tracker.init(frame, bbox)
             self.started = True
-        return self.tracker.update(frame)
+        success, bbox = self.tracker.update(frame)
+        x, y, w, h = [int(v) for v in bbox]
+        return success, DenormalizedBbox(x=x, y=y, w=w, h=h, frame_w=frame.shape[1], frame_h=frame.shape[0])
 
     def name(self):
         return self.tracker_pair[0]

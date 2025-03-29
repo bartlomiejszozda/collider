@@ -1,0 +1,20 @@
+Run:
+every terminal:
+cd ~/ardu_ws && source /opt/ros/humble/setup.bash && source install/setup.bash
+
+# start simulation
+ros2 launch ardupilot_gz_bringup iris_runway.launch.py
+
+# move black sphere up
+gz topic -t "/world/map/wrench/persistent" -m gz.msgs.EntityWrench -p "entity: {name: 'sphere', type: MODEL}, wrench: {force: {x: 0, y:0, z:9.80}}" && gz topic -t "/world/map/wrench" -m gz.msgs.EntityWrench -p "entity: {name: 'sphere', type: MODEL}, wrench: {force: {x: 0, y:0, z:40000}}" && sleep 3 && gz topic -t "/world/map/wrench" -m gz.msgs.EntityWrench -p "entity: {name: 'sphere', type: MODEL}, wrench: {force: {x: 0, y:0, z:-40000}}"
+
+# Wait for GPS (EKF3 IMU0 is using GPS)
+colcon build --packages-select collider && ros2 run collider collider_bin
+
+run Pycharm:
+cd cd /opt/pycharm-2024.3.5/bin/
+sh pycharm.sh
+
+ERRORS:
+# When no gazebo image, probably old gazebo process still running
+ps aux | grep gazebo

@@ -107,8 +107,10 @@ if __name__ == '__main__':
     main()
 
 #TODO SZOZDA
-# clean up TrackerManager
+# Done clean up TrackerManager
 # clean up BlackSpotTracker
+# Fill readme
+# Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )
 # add parent class for Trackers?
 # split SteeringUnit to steer throttle, pitch, yaw, roll etc.
 # add _ before private methods

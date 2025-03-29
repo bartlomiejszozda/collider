@@ -1,13 +1,15 @@
 import cv2
 import numpy as np
 
+from collider.src.Helpers import DenormalizedBbox
+from collider.src.tracker.Tracker import Tracker
 
-class BlackSpotTracker:
+class BlackSpotTracker(Tracker):
     def __init__(self):
         self._started = False
         self._prev_bbox = None
 
-    def track(self, frame):
+    def track(self, frame: np.ndarray) -> (bool, DenormalizedBbox):
         if not self._started:
             self._prev_bbox = cv2.selectROI("Select Object", frame, fromCenter=False, showCrosshair=True)
             cv2.destroyWindow("Select Object")
@@ -25,7 +27,8 @@ class BlackSpotTracker:
             return False, (0,0,0,0)
         bbox = self._get_closest_to_previous(contours, roi_x, roi_y)
         self._prev_bbox = bbox
-        return True, bbox
+        x, y, w, h = [int(v) for v in bbox]
+        return True, DenormalizedBbox(x=x, y=y, w=w, h=h, frame_w=frame.shape[1], frame_h=frame.shape[0])
 
     def _enlarge_prev_bbox_by_pixels(self, frame_height, frame_width, pixels):
         assert isinstance(pixels, int)
