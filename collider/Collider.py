@@ -112,13 +112,15 @@ if __name__ == '__main__':
 # split SteeringUnit to steer throttle, pitch, yaw, roll etc.
 # clean up Collider.py file
 # add type hints
-# check if _ before private methods
-# auto code clean up
 # change logs to ros logs? Or add logging system
 # add c++ node?
 # Fill readme
 # Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )
 # add unit tests
+
+# TODO IN THE END
+# check if _ before private methods
+# auto code clean up
 
 # TODO ADDITIONAL
 # add a proxy pattern to access ModeChanger and RCOverride (do we really need it?)

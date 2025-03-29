@@ -17,7 +17,7 @@ class PoseHistory(Node):
         self.create_subscription(PoseStamped, '/ap/pose/filtered', self._pose_callback, qos_profile)
 
     def _pose_callback(self, msg: PoseStamped):
-        stamp = msg.header.stamp.sec * 1e3 + msg.header.stamp.nanosec / 1e6
+        stamp = Milliseconds(msg.header.stamp.sec * 1e3 + msg.header.stamp.nanosec / 1e6)
         pitch, roll, yaw = self._get_attitude_in_degrees(msg.pose.orientation)
         with self.lock:
             assert stamp > self._pose_history[-1].stamp, f"assertion failed, {stamp} > {self._pose_history[-1].stamp}"
@@ -25,12 +25,12 @@ class PoseHistory(Node):
 
     def get_closest(self, simulation_timestamp: Milliseconds):
         ardupilot_timestamp = self._ardupilot_time.ardupilot_time_from_sim_time(simulation_timestamp)
-        margin_ms = 30
-        with self.lock:
+        margin = Milliseconds(30)
+        with (self.lock):
             assert ardupilot_timestamp >= self._pose_history[
-                0].stamp - margin_ms, f"assertion failed, {ardupilot_timestamp} >= {self._pose_history[0].stamp - margin_ms}"
+                0].stamp - margin, f"assertion failed, {ardupilot_timestamp} >= {self._pose_history[0].stamp - margin}"
             assert ardupilot_timestamp <= self._pose_history[
-                -1].stamp + margin_ms, f"assertion failed, {ardupilot_timestamp} <= {self._pose_history[-1].stamp + margin_ms}"
+                -1].stamp + margin, f"assertion failed, {ardupilot_timestamp} <= {self._pose_history[-1].stamp + margin}"
             time_distance = lambda id_val: abs(id_val[1].stamp - ardupilot_timestamp)
             id, closest = min(enumerate(self._pose_history), key=time_distance)
             self._pose_history = self._pose_history[id:]
