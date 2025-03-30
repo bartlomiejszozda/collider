@@ -3,7 +3,7 @@ from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
 
 import collider.src.steering.Stopper as StopperModule
-from collider.src.Helpers import Milliseconds, PixelDegrees, getDefaultProfile, Degree, d_Degree, d_d_Degree
+from collider.src.Helpers import Milliseconds, PixelDegrees, getDefaultProfile, Degree, d_Degree, d_d_Degree, log
 from collider.src.ardupilot.PoseHistory import PoseHistory
 from collider.src.ardupilot.RcOverride import RcOverride
 
@@ -21,18 +21,15 @@ class SteeringUnit(Node):
                                  qos_profile)
 
     def _image_pos_callback(self, msg: Float64MultiArray):
-        if msg.data[0] == 0:
-            print("Stopping app because tracking fails")
-            StopperModule.should_stop = True
         if StopperModule.should_stop:
-            print("omit steering because should_stop is set")
+            log.warning("omit steering because should_stop is set")
             return
         self._steer(Milliseconds(msg.data[0]), PixelDegrees(msg.data[1], msg.data[2]))
 
     def _steer(self, frame_timestamp: Milliseconds, target_angles: PixelDegrees):
         pose_when_image = self._pose_history.get_closest(frame_timestamp)
         if pose_when_image is None:
-            print("WARNING omit steering because can't determine pose.")
+            log.warning("omit steering because can't determine pose.")
             return
         current_pose = self._pose_history.get_current()
         # Down pitch is negative

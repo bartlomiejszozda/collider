@@ -1,0 +1,11 @@
+# Dont know if need to install all, but all of them saved in bash.history
+sudo apt install build-essential cmake pkg-config
+sudo apt install lsof -y
+sudo apt install python3-numpy
+sudo apt install ros-${ROS_DISTRO}-vision-opencv
+sudo apt install xclip -y
+sudo apt-get install ros-$ROS_DISTRO-gazebo-ros-pkgs ros-$ROS_DISTRO-gazebo-ros-control
+sudo apt-get install ros-humble-gazebo-ros-pkgs
+sudo apt-get install ros-humble-gazebo-ros-pkgs ros-humble-gazebo-ros-control
+sudo apt-get install ros-humble-gazebo-ros-pkgs ros-humble-image-transport-plugins
+sudo apt-get install ros-humble-ros2-control ros-humble-gazebo-ros-control

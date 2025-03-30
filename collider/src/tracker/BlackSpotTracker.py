@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from collider.src.Helpers import DenormalizedBbox
+from collider.src.Helpers import DenormalizedBbox, log
 from collider.src.tracker.Tracker import Tracker
 
 
@@ -19,7 +19,7 @@ class BlackSpotTracker(Tracker):
         tracking_region = self._prev_bbox.get_expanded_by(self.TRACKING_REGION_EXPANDED_BY)
         candidates = self._find_tracking_candidates(tracking_region, frame)
         if len(candidates) == 0:
-            print("BlackSpotFidner found no tracking candidate")
+            log.error("BlackSpotFidner found no tracking candidate")
             return None
         new_bbox = min(candidates, key=lambda new: new.distance(self._prev_bbox))
         self._prev_bbox = new_bbox

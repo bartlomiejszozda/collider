@@ -2,6 +2,7 @@ import threading
 import time
 from copy import deepcopy
 
+from collider.src.Helpers import log
 
 class RcOverride:
     def __init__(self, mavlink_connection):
@@ -32,7 +33,7 @@ class RcOverride:
                 channel = self._mapping[name]
                 self._rc_channels[channel] = val
             except KeyError as e:
-                print(f"Error while setting rc value: {e}")
+                log.error(f"Error while setting rc value: {e}")
 
     def get_rc(self, name: str):
         with self.lock:
@@ -40,7 +41,7 @@ class RcOverride:
                 channel = self._mapping[name]
                 return self._rc_channels[channel]
             except KeyError as e:
-                print(f"Error while getting rc value: {e}")
+                log.error(f"Error while getting rc value: {e}")
 
     def _start_rc_overriding_thread(self):
         self._rc_thread = threading.Thread(target=self._send_rcs_infinitely)
@@ -52,7 +53,7 @@ class RcOverride:
         prev_rc = None
         while True:
             if self._rc_channels != prev_rc:
-                print(f"Sending RC override {self._rc_channels}")
+                log.info(f"Sending RC override {self._rc_channels}")
             prev_rc = deepcopy(self._rc_channels)
             self._send_rc_override(self._rc_channels)
             time.sleep(0.1)

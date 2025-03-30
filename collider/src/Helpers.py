@@ -1,9 +1,14 @@
 import copy
+import logging
 import time
 from dataclasses import dataclass
 
 import numpy as np
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+
+log = logging.getLogger("collider")
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level="DEBUG")
+
 
 FOCAL = 410.939
 
@@ -51,7 +56,7 @@ class FpsCalculator:
     def update(self):
         if time.time() - self._begin_time > self._period:
             elapsed = time.time() - self._begin_time
-            print(f"{(self._count / elapsed):.2f} FPS for last {self._period} seconds")
+            log.info(f"{(self._count / elapsed):.2f} FPS for last {self._period} seconds")
             self._begin_time = time.time()
             self._count = -1
         self._count += 1
@@ -97,3 +102,14 @@ class DenormalizedBbox:
             self.w = self.frame_w - self.x
         if self.y + self.h > self.frame_h:
             self.h = self.frame_h - self.y
+
+def continue_when_exception(do):
+    try:
+        do()
+    except NameError as e:
+        if "referenced before assignment" in str(e):
+            return
+        log.warning(f"{e}\nException handled when closing, continue closing")
+    except Exception as e:
+        log.warning(f"{e}\nException handled when closing, continue closing")
+

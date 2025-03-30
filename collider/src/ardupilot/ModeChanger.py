@@ -1,6 +1,7 @@
 from ardupilot_msgs.srv import ModeSwitch
 from rclpy.node import Node
 
+from collider.src.Helpers import log
 
 class ModeChanger(Node):
     def __init__(self):
@@ -20,8 +21,8 @@ class ModeChanger(Node):
         mode_num = self.mode_map[mode]
         client = self.create_client(ModeSwitch, "/ap/mode_switch")
         while not client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn("Waiting for mode_switch service ...")
-        print(f"enable mode {mode}")
+            log.warn("Waiting for mode_switch service ... (may take a while)")
+        log.info(f"enable mode {mode}")
         request = ModeSwitch.Request(mode=mode_num)
         future = client.call_async(request)
         future.result()

@@ -14,13 +14,14 @@ from collider.src.steering.SteeringUnit import SteeringUnit
 from collider.src.steering.Stopper import Stopper
 from collider.src.tracker.BlackSpotTracker import BlackSpotTracker
 from collider.src.tracker.TrackerManager import TrackerManager
+from collider.src.Helpers import log, continue_when_exception
 
 
 def connect_mavlink():
     connection = mavutil.mavlink_connection('udp:localhost:14550')
-    print("Waiting for heartbeat...")
+    log.info("Waiting for heartbeat...")
     connection.wait_heartbeat()
-    print("Heartbeat received")
+    log.info("Heartbeat received")
     return connection
 
 
@@ -37,12 +38,12 @@ def set_param(connection, param_name, param_val):
         float(param_val),
         mavutil.mavlink.MAV_PARAM_TYPE_REAL32
     )
-    print(f"Set {param_name} to {param_val}")
+    log.info(f"Set {param_name} to {param_val}")
 
 
 def main(args=None):
     try:
-        print("starting collider")
+        log.info("starting collider")
         rclpy.init(args=['--ros-args', '--param', 'use_sim_time:=true'])
 
         mavlink_connection = connect_mavlink()
@@ -82,15 +83,15 @@ def main(args=None):
 
         stopper.stop_monitor()
     finally:
-        print("Enters finally, shutdown")
-        mode_changer.destroy_node()
-        starter.destroy_node()
-        stopper.destroy_node()
-        pose_history.destroy_node()
-        steering_unit.destroy_node()
-        tracker.destroy_node()
-        rclpy.shutdown()
-        executor_thread.join()
+        log.info("Enters finally, shutdown")
+        continue_when_exception(mode_changer.destroy_node)
+        continue_when_exception(starter.destroy_node)
+        continue_when_exception(stopper.destroy_node)
+        continue_when_exception(pose_history.destroy_node)
+        continue_when_exception(steering_unit.destroy_node)
+        continue_when_exception(tracker.destroy_node)
+        continue_when_exception(rclpy.shutdown)
+        continue_when_exception(executor_thread.join)
 
 
 if __name__ == '__main__':
@@ -98,13 +99,8 @@ if __name__ == '__main__':
 
 # TODO BASICS
 # do backflip at the start?
-# add continue_if_exception
-# change logs to ros logs? Or add logging system
-# Tracker using should_stop signal
-# add c++ node?
-# Fill readme
-# Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )
 # add unit tests
+# add c++ node?
 
 # TODO IN THE END
 # check if _ before private methods
@@ -125,3 +121,8 @@ if __name__ == '__main__':
 # _ before private everywhere
 # Clean Up Steering unit
 # clean up Collider.py file
+# add continue_if_exception
+# change logs to ros logs? Or add logging system
+# Tracker using should_stop signal
+# Fill readme
+# Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )

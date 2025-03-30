@@ -4,6 +4,7 @@ from rclpy.node import Node
 from collider.src.steering.Stopper import sleep_and_check, STOP
 from collider.src.ardupilot.RcOverride import RcOverride
 from collider.src.ardupilot.ModeChanger import ModeChanger
+from collider.src.Helpers import log
 
 
 class Starter(Node):
@@ -15,7 +16,7 @@ class Starter(Node):
     def takeoff(self):
         try:
             # START
-            self.get_logger().info("starting a drone")
+            log.info("starting a drone")
             self.rc.set_rc("throttle", 1000)
             self.mode_changer.call_mode("guided")
             sleep_and_check(1000)
@@ -36,7 +37,7 @@ class Starter(Node):
     def _call_arm_throttle(self):
         client = self.create_client(ArmMotors, "/ap/arm_motors")
         while not client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn("Waiting for arm_motors service ...")
+            log.warn("Waiting for arm_motors service ... (may take a while)")
         request = ArmMotors.Request(arm=True)
         future = client.call_async(request)
         future.result()

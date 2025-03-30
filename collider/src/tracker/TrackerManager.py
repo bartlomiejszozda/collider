@@ -4,7 +4,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image as ImageMsg
 from std_msgs.msg import Float64MultiArray
 
-from collider.src.Helpers import getDefaultProfile, FpsCalculator, DenormalizedBbox, FOCAL, Milliseconds, PixelDegrees
+from collider.src.Helpers import getDefaultProfile, FpsCalculator, DenormalizedBbox, FOCAL, Milliseconds, PixelDegrees, log
+import collider.src.steering.Stopper as StopperModule
 
 
 class TrackerManager(Node):
@@ -14,7 +15,7 @@ class TrackerManager(Node):
         self._tracker = tracker
         self._fps = FpsCalculator()
         self._publisher = self.create_publisher(Float64MultiArray, '/collider/image_pos', 10)
-        self.create_subscription(ImageMsg, 'static_camera_sensor/image', self._image_callback, qos_profile)
+        self.image_subscribtion = self.create_subscription(ImageMsg, 'static_camera_sensor/image', self._image_callback, qos_profile)
 
     def _image_callback(self, msg: ImageMsg):
         frame, timestamp, frame_height, frame_width = self._unpack_msg(msg)
@@ -26,8 +27,10 @@ class TrackerManager(Node):
             self._send_target_angles(timestamp, angles)
             self._fps.update()
         else:
+            self.destroy_subscription(self.image_subscribtion)
             cv2.putText(frame, "Tracking Failure", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-            self._send_target_angles(Milliseconds(0), PixelDegrees(0.0, 0.0))
+            log.exception("Stopping app because tracking fails")
+            StopperModule.should_stop = True
 
         cv2.imshow("Tracking", frame)
         cv2.waitKey(1)

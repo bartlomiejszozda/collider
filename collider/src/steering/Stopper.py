@@ -2,9 +2,8 @@ import time
 
 import numpy as np
 from rclpy.node import Node
-from std_srvs.srv import Trigger
 
-from collider.src.Helpers import Milliseconds
+from collider.src.Helpers import Milliseconds, log
 from collider.src.ardupilot.RcOverride import RcOverride
 from collider.src.ardupilot.ModeChanger import ModeChanger
 
@@ -13,7 +12,7 @@ should_stop = False
 
 def handle_sigint(signal, frame, executor):
     global should_stop
-    print("handle sigint")
+    log.info("handle sigint")
     should_stop = True
 
 
@@ -68,8 +67,7 @@ class Stopper(Node):
         global should_stop
         if not self._stopping:
             self._stopping = True
-            self.get_logger().info("landing ...")
-            print("landing")
+            log.info("landing")
             self.rc.set_drone_rc_neutral()
             time.sleep(5)
             self.rtl()
