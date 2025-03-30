@@ -36,3 +36,10 @@ sh pycharm.sh
 ERRORS:
 # When no gazebo image, probably old gazebo process still running
 ps aux | grep gazebo
+
+DESIGN PATTERNS:
+not many, cause project is more Procedural than OOP heavy. No class exists in multiple instances
+OpenCvTracker is Adapter
+RcOverrider is a Facade
+SteeringUnit, TrackerManager are observers (thanks to using ROS topics)
+logging module is a singleton

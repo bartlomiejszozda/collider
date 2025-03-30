@@ -2,13 +2,13 @@ from ardupilot_msgs.srv import ArmMotors
 from rclpy.node import Node
 
 from collider.src.steering.Stopper import sleep_and_check, STOP
-from collider.src.ardupilot.RcOverride import RcOverride
+from collider.src.ardupilot.RcOverrider import RcOverrider
 from collider.src.ardupilot.ModeChanger import ModeChanger
 from collider.src.Helpers import log
 
 
 class Starter(Node):
-    def __init__(self, rc: RcOverride, mode_changer: ModeChanger):
+    def __init__(self, rc: RcOverrider, mode_changer: ModeChanger):
         super().__init__("Starter")
         self.rc = rc
         self.mode_changer = mode_changer

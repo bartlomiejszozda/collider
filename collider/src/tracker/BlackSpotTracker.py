@@ -13,7 +13,7 @@ class BlackSpotTracker(Tracker):
     THRESHOLD = 30
     TRACKING_REGION_EXPANDED_BY = 100
 
-    def track(self, frame: np.ndarray) -> DenormalizedBbox:
+    def track(self, frame: np.ndarray) -> DenormalizedBbox | None:
         if not self._started:
             self._start(frame)
         tracking_region = self._prev_bbox.get_expanded_by(self.TRACKING_REGION_EXPANDED_BY)
@@ -34,14 +34,24 @@ class BlackSpotTracker(Tracker):
         self._started = True
 
     def _find_tracking_candidates(self, tracking_region: DenormalizedBbox, frame: np.ndarray) -> list[DenormalizedBbox]:
+        frame_height, frame_width = frame.shape[0], frame.shape[1]
+        tracking_frame_gray = self._prepare_and_show_tracking_frame(frame, tracking_region)
+        _, roi_thresholded = cv2.threshold(tracking_frame_gray, self.THRESHOLD, 255, cv2.THRESH_BINARY_INV)
+        countours, _ = cv2.findContours(roi_thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        candidates = self._contours_to_bboxes(countours, tracking_region, frame_width, frame_height)
+        return candidates
+
+    @staticmethod
+    def _prepare_and_show_tracking_frame(frame, tracking_region):
         tracking_frame = frame[tracking_region.y: tracking_region.y + tracking_region.h,
                          tracking_region.x: tracking_region.x + tracking_region.w]
-        frame_height, frame_width = frame.shape[0], frame.shape[1]
         tracking_frame_gray = cv2.cvtColor(tracking_frame, cv2.COLOR_BGR2GRAY)
         cv2.imshow("ROI", tracking_frame_gray)
         cv2.waitKey(1)
-        _, roi_thresholded = cv2.threshold(tracking_frame_gray, self.THRESHOLD, 255, cv2.THRESH_BINARY_INV)
-        countours, _ = cv2.findContours(roi_thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        return tracking_frame_gray
+
+    @staticmethod
+    def _contours_to_bboxes(countours, tracking_region, frame_width, frame_height):
         candidates = []
         for cnt in countours:
             x, y, w, h = cv2.boundingRect(cnt)

@@ -4,9 +4,6 @@ from rclpy.node import Node
 from collider.src.Helpers import log
 
 class ModeChanger(Node):
-    def __init__(self):
-        super().__init__("ModeChanger")
-
     mode_map = {
         "stabilize": 0,
         "acro": 1,
@@ -16,6 +13,9 @@ class ModeChanger(Node):
         "land": 9,
         "brake": 17,
     }
+
+    def __init__(self):
+        super().__init__("ModeChanger")
 
     def call_mode(self, mode: str):
         mode_num = self.mode_map[mode]

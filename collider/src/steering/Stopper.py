@@ -4,7 +4,7 @@ import numpy as np
 from rclpy.node import Node
 
 from collider.src.Helpers import Milliseconds, log
-from collider.src.ardupilot.RcOverride import RcOverride
+from collider.src.ardupilot.RcOverrider import RcOverrider
 from collider.src.ardupilot.ModeChanger import ModeChanger
 
 should_stop = False
@@ -35,7 +35,7 @@ def sleep_and_check(sleep_time: Milliseconds):
 
 
 class Stopper(Node):
-    def __init__(self, rc: RcOverride, mode_changer: ModeChanger):
+    def __init__(self, rc: RcOverrider, mode_changer: ModeChanger):
         super().__init__("Stopper")
         self._stopping = False
 

@@ -8,7 +8,7 @@ from rclpy.executors import MultiThreadedExecutor
 from collider.src.ardupilot.ArdupilotClock import ArdupilotClock
 from collider.src.ardupilot.ModeChanger import ModeChanger
 from collider.src.ardupilot.PoseHistory import PoseHistory
-from collider.src.ardupilot.RcOverride import RcOverride
+from collider.src.ardupilot.RcOverrider import RcOverrider
 from collider.src.steering.Starter import Starter
 from collider.src.steering.SteeringUnit import SteeringUnit
 from collider.src.steering.Stopper import Stopper
@@ -59,7 +59,7 @@ def main(args=None):
 
         executor = MultiThreadedExecutor()
 
-        rc = RcOverride(mavlink_connection)
+        rc = RcOverrider(mavlink_connection)
         mode_changer = ModeChanger()
         stopper = Stopper(rc, mode_changer)
 
@@ -96,33 +96,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
-# TODO BASICS
-# do backflip at the start?
-# add unit tests
-# add c++ node?
-
-# TODO IN THE END
-# check if _ before private methods
-# auto code clean up
-# check type hints
-
-# TODO ADDITIONAL
-# add a proxy pattern to access ModeChanger and RCOverride (do we really need it?)
-# allow to kill app / RTL and restart properly
-# log useful for analysis should be saved in excel
-
-# TODO DONE
-# clean up TrackerManager
-# add parent class for Trackers?
-# clean up BlackSpotTracker
-# Milliseconds everywhere and as float
-# typehints everywhere
-# _ before private everywhere
-# Clean Up Steering unit
-# clean up Collider.py file
-# add continue_if_exception
-# change logs to ros logs? Or add logging system
-# Tracker using should_stop signal
-# Fill readme
-# Fill readme with all changes I made after ardupilot instructions (add camera, ros bridge, )

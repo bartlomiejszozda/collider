@@ -9,12 +9,12 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 log = logging.getLogger("collider")
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level="DEBUG")
 
-
 FOCAL = 410.939
 
 Degree = float
-d_Degree = float # delta of Degree
-d_d_Degree = float # delta of delta of Degree
+d_Degree = float  # delta of Degree
+d_d_Degree = float  # delta of delta of Degree
+
 
 @dataclass
 class PixelDegrees:
@@ -25,8 +25,8 @@ class PixelDegrees:
 @dataclass
 class EulerDegrees:
     roll: Degree
-    pitch: Degree
-    yaw: Degree
+    pitch: Degree  # Down pitch is negative
+    yaw: Degree  # Right yaw is positive
 
 
 Milliseconds = float
@@ -103,6 +103,7 @@ class DenormalizedBbox:
         if self.y + self.h > self.frame_h:
             self.h = self.frame_h - self.y
 
+
 def continue_when_exception(do):
     try:
         do()
@@ -112,4 +113,3 @@ def continue_when_exception(do):
         log.warning(f"{e}\nException handled when closing, continue closing")
     except Exception as e:
         log.warning(f"{e}\nException handled when closing, continue closing")
-
