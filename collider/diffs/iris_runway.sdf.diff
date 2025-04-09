@@ -1,0 +1,72 @@
+diff --git a/./src/ardupilot_gz/ardupilot_gz_gazebo/worlds/iris_runway.sdf b/./install/ardupilot_gz_gazebo/share/ardupilot_gz_gazebo/worlds/iris_runway.sdf
+old mode 100755
+new mode 100644
+index dfa38d8..84476b7
+--- a/./src/ardupilot_gz/ardupilot_gz_gazebo/worlds/iris_runway.sdf
++++ b/./install/ardupilot_gz_gazebo/share/ardupilot_gz_gazebo/worlds/iris_runway.sdf
+@@ -77,6 +77,65 @@
+       <name>iris</name>
+       <pose degrees="true">0 0 0.195 0 0 90</pose>
+     </include>
++    <model name='sphere'>
++      <pose>167 411 50 0 0 0</pose>
++      <link name='sphere_link'>
++        <inertial>
++          <inertia>
++            <ixx>0.10000000000000001</ixx>
++            <ixy>0</ixy>
++            <ixz>0</ixz>
++            <iyy>0.10000000000000001</iyy>
++            <iyz>0</iyz>
++            <izz>0.10000000000000001</izz>
++          </inertia>
++          <mass>1</mass>
++          <pose>0 0 0 0 0 0</pose>
++        </inertial>
++        <collision name='sphere_collision'>
++          <geometry>
++            <sphere>
++              <radius>3</radius>
++            </sphere>
++          </geometry>
++          <surface>
++            <friction>
++              <ode/>
++            </friction>
++            <bounce/>
++            <contact/>
++          </surface>
++        </collision>
++        <visual name='sphere_visual'>
++          <geometry>
++            <sphere>
++              <radius>5</radius>
++            </sphere>
++          </geometry>
++          <material>
++            <ambient>0 0 0 1</ambient>
++            <diffuse>0 0 0 1</diffuse>
++            <specular>0 0 0 1</specular>
++          </material>
++        </visual>
++        <pose>0 0 0 0 0 0</pose>
++        <enable_wind>false</enable_wind>
++      </link>
++      <static>false</static>
++      <self_collide>false</self_collide>
++    </model>
++<plugin
++      filename="gz-sim-apply-link-wrench-system"
++      name="gz::sim::systems::ApplyLinkWrench">
++      <persistent>
++	<entity_name>cylindar</entity_name>
++	<entity_type>model</entity_type>
++	<force>-10 0 0</force>
++	<torque>0 0 0.1</torque>
++      </persistent>
++</plugin>
++
++
+ 
+   </world>
+ </sdf>

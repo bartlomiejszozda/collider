@@ -1,0 +1,90 @@
+diff --git a/./src/ardupilot_gazebo/models/iris_with_gimbal/model.config b/./install/ardupilot_gazebo/share/ardupilot_gazebo/models/iris_with_gimbal/model.config
+old mode 100755
+new mode 100644
+diff --git a/./src/ardupilot_gazebo/models/iris_with_gimbal/model.sdf b/./install/ardupilot_gazebo/share/ardupilot_gazebo/models/iris_with_gimbal/model.sdf
+old mode 100755
+new mode 100644
+index a313a64..376912e
+--- a/./src/ardupilot_gazebo/models/iris_with_gimbal/model.sdf
++++ b/./install/ardupilot_gazebo/share/ardupilot_gazebo/models/iris_with_gimbal/model.sdf
+@@ -1,5 +1,9 @@
+ <?xml version='1.0'?>
+ <sdf version="1.9">
++  <physics type="ode">
++    <max_step_size>0.005</max_step_size>  <!-- Increase from 0.001 -->
++    <real_time_update_rate>200</real_time_update_rate> <!-- lower from 1000-->
++  </physics>
+   <model name="iris_with_gimbal">
+     <include merge="true">
+       <uri>package://ardupilot_gazebo/models/iris_with_standoffs</uri>
+@@ -12,6 +16,70 @@
+       <pose degrees="true">0 -0.01 -0.124923 90 0 90</pose>
+     </include>
+ 
++
++    <link name="static_camera_link">
++      <pose>0 0 0 0 0 0</pose>
++      <inertial>
++        <mass>0.00</mass>
++        <inertia>
++          <ixx>0.0</ixx>
++          <ixy>0</ixy>
++          <ixz>0</ixz>
++          <iyy>0.0</iyy>
++          <iyz>0</iyz>
++          <izz>0.0</izz>
++        </inertia>
++      </inertial>
++
++
++      <visual name="static_camera_visual">
++	<pose degrees="true">0.1 0 0 0 90 0</pose>
++        <geometry>
++          <cylinder>
++            <radius>0.025</radius>
++            <length>0.050</length>
++          </cylinder>
++        </geometry>
++        <material>
++          <ambient>0.4 0.4 0.4</ambient>
++          <diffuse>0.4 0.4 0.4</diffuse>
++          <specular>0.1 0.1 0.1 1.0</specular>
++        </material>
++      </visual>
++
++      <sensor name="static_camera_sensor" type="camera">
++	<pose degrees="true">0.1 0 0 0 0 0</pose>
++        <camera>
++          <horizontal_fov>2</horizontal_fov> <!-- Field of view -->
++          <image>
++            <width>640</width>
++            <height>480</height>
++          </image>
++          <clip>
++            <near>0.05</near>
++            <far>15000</far>
++          </clip>
++        </camera>
++        <visualize>1</visualize>
++	<always_on>1</always_on>
++        <update_rate>20</update_rate>
++
++	<plugin name="GstCameraPlugin"
++            filename="GstCameraPlugin">
++          <udp_host>127.0.0.1</udp_host>
++          <udp_port>5600</udp_port>
++          <use_basic_pipeline>true</use_basic_pipeline>
++          <use_cuda>false</use_cuda>
++        </plugin>
++      </sensor>
++
++    </link>
++
++    <joint name="static_camera_joint" type="fixed">
++      <parent>base_link</parent>
++      <child>static_camera_link</child>
++    </joint>
++
+     <joint name="gimbal_joint" type="revolute">
+       <parent>base_link</parent>
+       <child>gimbal_link</child>

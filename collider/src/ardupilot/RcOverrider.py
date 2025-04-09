@@ -17,21 +17,20 @@ class RcOverrider:
     }
 
     def __init__(self, mavlink_connection):
-        if not self.exist:
+        if self.exist:
             raise Exception("There should be only one RcOverrider")
         self.exist = True
         self._rc_channels = [1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500]
         self._connection = mavlink_connection
-        self._start_rc_overriding_thread()
         self.lock = threading.Lock()
+        self._start_rc_overriding_thread()
 
     def set_drone_rc_neutral(self):
         neutral = 1500
-        with self.lock:
-            self.set_rc("roll", neutral)
-            self.set_rc("pitch", neutral)
-            self.set_rc("throttle", neutral)
-            self.set_rc("yaw", neutral)
+        self.set_rc("roll", neutral)
+        self.set_rc("pitch", neutral)
+        self.set_rc("throttle", neutral)
+        self.set_rc("yaw", neutral)
 
     def set_rc(self, name: str, val: int):
         with self.lock:
@@ -51,7 +50,7 @@ class RcOverrider:
 
     def _start_rc_overriding_thread(self):
         self._rc_thread = threading.Thread(target=self._send_rcs_infinitely)
-        self._rc_thread.deamon = True
+        self._rc_thread.daemon = True
         self._rc_thread.start()
 
     def _send_rcs_infinitely(self):
@@ -65,16 +64,15 @@ class RcOverrider:
             time.sleep(0.1)
 
     def _send_rc_override(self):
-        with self.lock:
-            self._connection.mav.rc_channels_override_send(
-                self._connection.target_system,
-                self._connection.target_component,
-                self._rc_channels[0],
-                self._rc_channels[1],
-                self._rc_channels[2],
-                self._rc_channels[3],
-                self._rc_channels[4],
-                self._rc_channels[5],
-                self._rc_channels[6],
-                self._rc_channels[7]
-            )
+        self._connection.mav.rc_channels_override_send(
+            self._connection.target_system,
+            self._connection.target_component,
+            self._rc_channels[0],
+            self._rc_channels[1],
+            self._rc_channels[2],
+            self._rc_channels[3],
+            self._rc_channels[4],
+            self._rc_channels[5],
+            self._rc_channels[6],
+            self._rc_channels[7]
+        )

@@ -1,0 +1,66 @@
+diff --git a/./src/ardupilot_gazebo/models/gimbal_small_3d/model.sdf b/./install/ardupilot_gazebo/share/ardupilot_gazebo/models/gimbal_small_3d/model.sdf
+index 0c4b014..9cfd67b 100644
+--- a/./src/ardupilot_gazebo/models/gimbal_small_3d/model.sdf
++++ b/./install/ardupilot_gazebo/share/ardupilot_gazebo/models/gimbal_small_3d/model.sdf
+@@ -165,61 +165,7 @@
+           </mesh>
+         </geometry>
+       </collision>
+-      <visual name="camera_visual">
+-        <pose>0 0 0.02 0 0 0</pose>
+-        <geometry>
+-          <cylinder>
+-            <radius>0.025</radius>
+-            <length>0.050</length>
+-          </cylinder>
+-        </geometry>
+-        <material>
+-          <ambient>0.4 0.4 0.4</ambient>
+-          <diffuse>0.4 0.4 0.4</diffuse>
+-          <specular>0.1 0.1 0.1 1.0</specular>
+-        </material>
+-      </visual>
+-      <collision name="camera_collision">
+-        <pose>0 0 0.02 0 0 0</pose>
+-        <geometry>
+-          <cylinder>
+-            <radius>0.025</radius>
+-            <length>0.050</length>
+-          </cylinder>
+-        </geometry>
+-      </collision>
+-      <sensor name="camera" type="camera">
+-        <pose>0 0 0 -1.57 -1.57 0</pose>
+-        <camera>
+-          <horizontal_fov>2.0</horizontal_fov>
+-          <image>
+-            <width>640</width>
+-            <height>480</height>
+-          </image>
+-          <clip>
+-            <near>0.05</near>
+-            <far>15000</far>
+-          </clip>
+-        </camera>
+-        <always_on>1</always_on>
+-        <update_rate>10</update_rate>
+-        <visualize>1</visualize>
+-
+-        <plugin filename="CameraZoomPlugin"
+-            name="CameraZoomPlugin">
+-          <max_zoom>125.0</max_zoom>
+-          <slew_rate>0.42514285714</slew_rate>
+-        </plugin>
+-        
+-        <plugin name="GstCameraPlugin"
+-            filename="GstCameraPlugin">
+-          <udp_host>127.0.0.1</udp_host>
+-          <udp_port>5600</udp_port>
+-          <use_basic_pipeline>true</use_basic_pipeline>
+-          <use_cuda>false</use_cuda>
+-        </plugin>
+ 
+-      </sensor>
+     </link>
+     <joint name="pitch_joint" type="revolute">
+       <parent>roll_link</parent>
