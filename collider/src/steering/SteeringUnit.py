@@ -4,8 +4,8 @@ from std_msgs.msg import Float64MultiArray
 
 import collider.src.steering.Stopper as StopperModule
 from collider.src.Helpers import Milliseconds, PixelDegrees, getDefaultProfile, Degree, d_Degree, d_d_Degree, log
-from collider.src.ardupilot.PoseHistory import PoseHistory
-from collider.src.ardupilot.RcOverrider import RcOverrider
+from collider.src.ardupilot_related.PoseHistory import PoseHistory
+from collider.src.ardupilot_related.RcOverrider import RcOverrider
 
 
 class SteeringUnit(Node):

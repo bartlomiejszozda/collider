@@ -2,8 +2,8 @@ from ardupilot_msgs.srv import ArmMotors
 from rclpy.node import Node
 
 from collider.src.steering.Stopper import sleep_and_check, STOP
-from collider.src.ardupilot.RcOverrider import RcOverrider
-from collider.src.ardupilot.ModeChanger import ModeChanger
+from collider.src.ardupilot_related.RcOverrider import RcOverrider
+from collider.src.ardupilot_related.ModeChanger import ModeChanger
 from collider.src.Helpers import log
 
 

@@ -1,38 +1,30 @@
-### DESCRIPTION
-Project to make some fun by steering drone using ROS2, ardupilot SITL and gazebo simulation
-Collider is starting a drone, than steering it in order to hit a flying object.
-Steering is based on object tracking which uses camera image (visual servoing).
+### Description
+A learning project for autonomous drone steering which utilize ROS2, ardupilot SITL and gazebo simulation.
+The system launches a drone and navigates towards the selected flying target.
+Drone control is achieved through visual servoing based on object tracking from onboard camera images.
 
-Difficulties:\
-Steering should be more robust, however iris is not powerful and it doesn't manage leaning too much while flying fast or climbing up quickly.
-Decided to do simple steering algorithms, but it still manages to hit stationary/slightly moving targets.
-Need to use racing drone or power up iris, then refine steering algorithms.
-
-Tested various off-the-shelf trackers, but they barely manage to track an object from a moving camera.
-Usually off-the-shelf trackers lost target when drone rotates too much
-Currently decided to bypass tracking problem by using BlackSphere and using BlackSpotTracker
-Need to implement dedicated solution
-
+### Design Patterns:
+- OpenCvTracker implement an Adapter
+- RcOverrider implement a Facade
+- SteeringUnit or TrackerManager implements Observers (by using ROS topics)
+- (TODO) RcOverride and ModeChanger implement Proxy Design Pattern
 
 ### TODO
-#### Code related:
-unit tests \
-RcOverride and ModeChanger implement Proxy Design Pattern \
-c++ Node \
-#### Main functionality:
-Implement [advanced tracking](https://www.computer.org/csdl/journal/ec/2022/03/09519550/1wc8Vbe1r7G) \
-Implement advanced steering, take drone intertia into account \
-#### Additional Functionalities:
-Steering from gamepad \
-Following a target moving on the ground \
+Main functionality:
+- Use racing drone or power up iris. Currently it struggle leaning and flying fast or climbing up quickly.
+- Implement [advanced tracking](https://www.computer.org/csdl/journal/ec/2022/03/09519550/1wc8Vbe1r7G). Opencv trackers lost target when camera rotates. Currently decided to bypass tracking problem by implementing black spot tracker and black sphere as a target.
+- Implement advanced steering, take drone intertia into account
 
-### DESIGN PATTERNS:
-Cant use many design patterns However, some design patterns are applied:
-OpenCvTracker implement an Adapter \
-RcOverrider implement a Facade \
-SteeringUnit, TrackerManager implement Observer (by using ROS topics) \
+Additional Functionalities:
+- Steering from gamepad
+- Following a target moving on the ground
 
-### INSTALLATION:
+Code related:
+- Unit tests
+- Auto simulation tests
+- C++ Node
+
+### Installation:
 follow [ardupilot ros manual](https://ardupilot.org/dev/docs/ros.html) (using docker)
 - Install ROS 2
 - ROS 2 with SITL
@@ -65,16 +57,16 @@ run collider (wait till simulation start using GPS)\
 `ros2 run collider collider_bin`
 
 **3rd terminal:**\
-Run Pycharm If you want to edit code\
+Run Pycharm if you want to edit the code\
 `cd /opt/pycharm-2024.3.5/bin/`\
 `sh pycharm.sh`
 
 ### Problems worth to mention:
 **Gazebo doesn't show image:**\
 probably old gazebo process still running\
-`ps aux | grep gazebo`
+`ps aux | grep gazebo`\
+`kill -9 <PID>`
 
 **Pycharm doesn't see ros dependencies:**\
 source ros before running pycharm\
 `cd ~/ardu_ws && source /opt/ros/humble/setup.bash && source install/setup.bash`
-

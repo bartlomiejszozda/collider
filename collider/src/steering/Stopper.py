@@ -4,8 +4,8 @@ import numpy as np
 from rclpy.node import Node
 
 from collider.src.Helpers import Milliseconds, log
-from collider.src.ardupilot.RcOverrider import RcOverrider
-from collider.src.ardupilot.ModeChanger import ModeChanger
+from collider.src.ardupilot_related.RcOverrider import RcOverrider
+from collider.src.ardupilot_related.ModeChanger import ModeChanger
 
 should_stop = False
 
