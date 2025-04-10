@@ -38,7 +38,7 @@ run docker with display and nvidia: \
 **start stopped docker**:\
 `docker start ardupilot-dds3`
 
-**Open terminal:**\
+**Open 3 terminals:**\
 enter docker\
 `sudo xhost +Local:* && docker container exec -it ardupilot-dds3 /bin/bash`\
 source ros\
